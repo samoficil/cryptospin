@@ -5,10 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CryptoSpin - Solo BNB en tiempo real</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    iframe {
+      pointer-events: none;
+      border-radius: 12px;
+      border: 2px solid #4ade80;
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body class="bg-gray-900 text-white">
-  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin - Solo BNB en tiempo real</header>
+  <header class="p-4 bg-gray-800 flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-center flex-grow">CryptoSpin - Solo BNB en tiempo real</h1>
+    <button id="profileBtn" class="ml-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-full font-semibold">Perfil</button>
+  </header>
 
   <main class="p-6">
     <section class="mb-6">
@@ -21,6 +31,22 @@
 
   <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
 
-  <script src="script.js"></script>
+  <!-- Perfil modal -->
+  <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden">
+    <div class="bg-gray-800 rounded-xl p-6 max-w-md w-full relative">
+      <button id="closeProfile" class="absolute top-3 right-3 text-white text-xl font-bold">&times;</button>
+      <h2 class="text-2xl font-bold mb-4">Perfil de Usuario</h2>
+      <div>
+        <p class="mb-2">Ganancias acumuladas:</p>
+        <p id="earnings" class="text-green-400 text-3xl font-bold mb-6">0 BNB</p>
+        <button id="withdrawBtn" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-full font-bold w-full">Retirar Ganancias</button>
+      </div>
+      <div class="mt-6 text-sm text-gray-400">
+        <p><strong>Nota:</strong> Retirar ganancias es simulado. En producción, integraría smart contract o backend para gestionar pagos reales.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
