@@ -6,37 +6,44 @@
   <title>Registro - CryptoSpin</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
 </head>
-<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
-  <form id="registerForm" class="bg-gray-800 p-6 rounded shadow-md w-full max-w-sm space-y-4">
-    <h2 class="text-2xl font-bold text-green-400 mb-4">Registro</h2>
-    <input type="text" id="username" placeholder="Nombre de usuario" class="w-full p-2 rounded bg-gray-700 text-white" required />
-    <input type="email" id="email" placeholder="Correo electrónico" class="w-full p-2 rounded bg-gray-700 text-white" required />
-    <input type="password" id="password" placeholder="Contraseña" class="w-full p-2 rounded bg-gray-700 text-white" required />
-    <button type="submit" class="w-full bg-green-500 hover:bg-green-600 p-2 rounded">Registrar</button>
-    <p class="text-sm mt-2">¿Ya tienes cuenta? <a href="login.html" class="text-blue-400 underline">Inicia sesión</a></p>
-    <div id="error" class="text-red-400 mt-2"></div>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+  <form id="registerForm" class="bg-gray-800 p-6 rounded shadow-md max-w-sm w-full space-y-4">
+    <h1 class="text-3xl font-bold text-green-400 mb-6 text-center">Registro</h1>
+    <input type="text" id="username" placeholder="Nombre de usuario" class="w-full p-3 rounded bg-gray-700 text-white" required />
+    <input type="email" id="email" placeholder="Correo electrónico" class="w-full p-3 rounded bg-gray-700 text-white" required />
+    <input type="password" id="password" placeholder="Contraseña" class="w-full p-3 rounded bg-gray-700 text-white" required />
+    <button type="submit" class="w-full bg-green-500 hover:bg-green-600 py-3 rounded font-bold transition">Registrar</button>
+    <p class="text-sm text-center text-gray-400">¿Ya tienes cuenta? <a href="login.html" class="text-blue-400 underline">Inicia sesión</a></p>
+    <p id="error" class="text-red-500 text-center"></p>
   </form>
 
   <script>
-    document.getElementById("registerForm").addEventListener("submit", function(e) {
+    const form = document.getElementById('registerForm');
+    const error = document.getElementById('error');
+
+    form.addEventListener('submit', e => {
       e.preventDefault();
-      const username = document.getElementById("username").value.trim();
-      const email = document.getElementById("email").value.trim().toLowerCase();
-      const password = document.getElementById("password").value;
+      error.textContent = '';
 
-      let users = JSON.parse(localStorage.getItem("users") || "[]");
+      const username = form.username.value.trim();
+      const email = form.email.value.trim().toLowerCase();
+      const password = form.password.value;
 
-      const userExists = users.find(u => u.username === username || u.email === email);
+      let users = JSON.parse(localStorage.getItem('users') || '[]');
 
-      if (userExists) {
-        document.getElementById("error").textContent = "❌ Usuario o correo ya registrados.";
+      if(users.some(u => u.username === username)) {
+        error.textContent = '❌ El nombre de usuario ya está en uso.';
+        return;
+      }
+      if(users.some(u => u.email === email)) {
+        error.textContent = '❌ El correo electrónico ya está registrado.';
         return;
       }
 
       users.push({ username, email, password });
-      localStorage.setItem("users", JSON.stringify(users));
-      // No iniciar sesión automático, solo redirigir a login
-      window.location.href = "login.html";
+      localStorage.setItem('users', JSON.stringify(users));
+
+      window.location.href = 'login.html';
     });
   </script>
 </body>
