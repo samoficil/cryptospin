@@ -317,3 +317,44 @@ function updateUserEarningsUI() {
 window.addEventListener("load", () => {
   populateRooms();
 });
+
+// Al cargar la página, intenta conectar wallet (MetaMask)
+window.onload = async () => {
+  if (window.ethereum) {
+    try {
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      // Binance Smart Chain mainnet chainId = 0x38
+      if (chainId !== '0x38') {
+        alert('⚠️ Cambia a Binance Smart Chain (BNB) para pagar');
+      }
+    } catch (error) {
+      console.log('Usuario no conectó wallet');
+    }
+  } else {
+    alert('Por favor instala MetaMask');
+  }
+};
+
+// Para pagos, solo acepta BNB (ejemplo)
+async function pagarBNB(montoBNB, destino) {
+  const accounts = await ethereum.request({ method: 'eth_accounts' });
+  if (accounts.length === 0) return alert('Wallet no conectada');
+  
+  const tx = {
+    from: accounts[0],
+    to: destino,
+    value: ethers.utils.parseEther(montoBNB).toHexString(),
+    chainId: 56, // BSC mainnet
+  };
+
+  try {
+    const txHash = await ethereum.request({
+      method: 'eth_sendTransaction',
+      params: [tx],
+    });
+    console.log('Pago exitoso:', txHash);
+  } catch (error) {
+    console.error('Pago fallido:', error);
+  }
+}
