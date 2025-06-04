@@ -9,6 +9,9 @@
     /* Bloquear interacción con el iframe para que nadie pueda girar manualmente */
     iframe {
       pointer-events: none;
+      border-radius: 12px;
+      border: 2px solid #4ade80;
+      margin-top: 20px;
     }
   </style>
 </head>
@@ -85,16 +88,15 @@
           src="https://wheelofnames.com/bh2-bm6"
           width="400"
           height="400"
-          style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
         ></iframe>
       `;
 
       roomsContainer.appendChild(room);
       roomsData.push({ id, participants, iframeId, selectId, buttonId });
 
-      // Control para habilitar botón solo si seleccionan número
       const selectEl = document.getElementById(selectId);
       const joinBtn = document.getElementById(buttonId);
+
       selectEl.addEventListener("change", () => {
         if (selectEl.value) {
           joinBtn.disabled = false;
@@ -105,7 +107,6 @@
         }
       });
 
-      // Evento para unirse
       joinBtn.addEventListener("click", () => joinRoom(id));
     }
 
@@ -137,14 +138,9 @@
           const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
           const wallet = accounts[0];
 
-          // Enviar pago automático en BNB (BNB está en Binance Smart Chain, con la misma interface Ethereum)
-          // Valor: 0.50 USD en BNB (aproximado). Aquí ponemos 0.0005 BNB como ejemplo (ajustar según precio real)
-          // Valor en hexadecimal Wei: 0.0005 BNB = 0.0005 * 10^18 = 5 * 10^14 wei = 500000000000000
-          // Hex = 0x1c6bf52634000
+          // Valor fijo para pagar 0.0005 BNB aprox (ajustar si quieres otro valor)
+          const valueInHex = '0x1c6bf52634000';
 
-          const valueInHex = '0x1c6bf52634000'; // 0.0005 BNB aprox
-
-          // Deshabilitar botón para evitar doble click
           joinBtn.disabled = true;
           joinBtn.textContent = "Procesando pago...";
 
@@ -159,23 +155,21 @@
 
           alert(`Wallet conectada: ${wallet}\nNúmero seleccionado: ${selectedNumber}\nPago enviado!\nTx: ${txHash}\n¡Te has unido a la Sala #${roomId}!`);
 
-          // Actualizar participantes
           let newCount = parseInt(countEl.textContent) + 1;
           countEl.textContent = newCount;
           room.participants = newCount;
 
-          // Deshabilitar el número seleccionado para que no se repita (opcional)
+          // Deshabilitar opción seleccionada para que no se repita (opcional)
           selectEl.querySelector(`option[value="${selectedNumber}"]`).disabled = true;
-          selectEl.value = ""; // reset selección
+          selectEl.value = "";
           joinBtn.disabled = true;
           joinBtn.classList.add("opacity-50", "cursor-not-allowed");
           joinBtn.textContent = "Unirse por $0.50";
 
-          // Si la sala está llena, girar la rueda automáticamente
+          // Cuando sala llena, girar rueda automáticamente
           if (newCount >= 200) {
             alert("¡La sala está llena! Girando la ruleta automáticamente...");
             const iframe = document.getElementById(room.iframeId);
-            // Mandamos mensaje para girar la rueda, si lo soporta
             iframe.contentWindow.postMessage({ action: 'spin' }, '*');
           }
 
@@ -189,7 +183,6 @@
       }
     }
 
-    // Filtrar salas por búsqueda
     searchInput.addEventListener("input", () => {
       const term = searchInput.value.trim();
       document.querySelectorAll(".room").forEach(room => {
