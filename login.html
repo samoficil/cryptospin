@@ -6,35 +6,84 @@
   <title>Iniciar sesión - CryptoSpin</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
 </head>
-<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center h-screen p-4">
   <form id="loginForm" class="bg-gray-800 p-6 rounded shadow-md w-full max-w-sm space-y-4">
     <h2 class="text-2xl font-bold text-green-400 mb-4">Iniciar sesión</h2>
-    <input type="text" id="loginInput" placeholder="Usuario o correo" class="w-full p-2 rounded bg-gray-700 text-white" required />
-    <input type="password" id="loginPassword" placeholder="Contraseña" class="w-full p-2 rounded bg-gray-700 text-white" required />
+    <input type="text" id="username" placeholder="Nombre de usuario" class="w-full p-2 rounded bg-gray-700 text-white" required />
+    <input type="password" id="password" placeholder="Contraseña" class="w-full p-2 rounded bg-gray-700 text-white" required />
     <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 p-2 rounded">Entrar</button>
     <p class="text-sm mt-2">¿No tienes cuenta? <a href="register.html" class="text-blue-400 underline">Regístrate</a></p>
+    <p class="text-sm mt-1">
+      <a href="#" id="forgotPass" class="text-yellow-400 underline cursor-pointer">¿Olvidaste tu contraseña?</a>
+    </p>
     <div id="loginError" class="text-red-400 mt-2"></div>
   </form>
 
+  <!-- Modal simple para recuperar contraseña -->
+  <div id="recoverModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden">
+    <div class="bg-gray-800 p-6 rounded max-w-sm w-full text-white">
+      <h3 class="text-xl font-bold mb-4">Recuperar contraseña</h3>
+      <input type="text" id="recoverUsername" placeholder="Nombre de usuario" class="w-full p-2 rounded bg-gray-700 mb-3" />
+      <input type="email" id="recoverEmail" placeholder="Correo electrónico" class="w-full p-2 rounded bg-gray-700 mb-3" />
+      <button id="recoverBtn" class="w-full bg-yellow-400 text-black p-2 rounded mb-2">Recuperar</button>
+      <button id="closeRecover" class="w-full bg-red-500 p-2 rounded">Cerrar</button>
+      <p id="recoverResult" class="mt-3"></p>
+    </div>
+  </div>
+
   <script>
-    document.getElementById("loginForm").addEventListener("submit", function(e) {
+    const loginForm = document.getElementById("loginForm");
+    const loginError = document.getElementById("loginError");
+
+    loginForm.addEventListener("submit", function(e) {
       e.preventDefault();
-      const loginInput = document.getElementById("loginInput").value.trim().toLowerCase();
-      const password = document.getElementById("loginPassword").value;
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
 
       const users = JSON.parse(localStorage.getItem("users") || "[]");
-      const user = users.find(u => 
-        (u.username.toLowerCase() === loginInput || u.email === loginInput) && u.password === password
-      );
+      const user = users.find(u => u.username === username && u.password === password);
 
       if (!user) {
-        document.getElementById("loginError").textContent = "❌ Credenciales incorrectas.";
+        loginError.textContent = "❌ Usuario o contraseña incorrectos.";
         return;
       }
 
       localStorage.setItem("currentUser", JSON.stringify({ username: user.username, email: user.email }));
       window.location.href = "index.html";
     });
+
+    // Recuperar contraseña modal
+    const recoverModal = document.getElementById("recoverModal");
+    const forgotPass = document.getElementById("forgotPass");
+    const closeRecover = document.getElementById("closeRecover");
+    const recoverBtn = document.getElementById("recoverBtn");
+    const recoverResult = document.getElementById("recoverResult");
+
+    forgotPass.onclick = () => {
+      recoverModal.classList.remove("hidden");
+      recoverResult.textContent = "";
+      document.getElementById("recoverUsername").value = "";
+      document.getElementById("recoverEmail").value = "";
+    };
+
+    closeRecover.onclick = () => {
+      recoverModal.classList.add("hidden");
+    };
+
+    recoverBtn.onclick = (e) => {
+      e.preventDefault();
+      const rUser = document.getElementById("recoverUsername").value.trim();
+      const rEmail = document.getElementById("recoverEmail").value.trim().toLowerCase();
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      const user = users.find(u => u.username === rUser && u.email === rEmail);
+
+      if (!user) {
+        recoverResult.textContent = "❌ Usuario o correo no encontrado.";
+        return;
+      }
+
+      recoverResult.textContent = `🔑 Tu contraseña es: ${user.password}`;
+    };
   </script>
 </body>
 </html>
