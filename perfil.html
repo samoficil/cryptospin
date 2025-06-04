@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Perfil - Lotería BSC</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Perfil de Usuario</h1>
+    <nav>
+      <a href="index.html">Inicio</a> |
+      <a href="perfil.html">Perfil</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="profileSection">
+      <button id="connectWalletBtn">Conectar Wallet</button>
+      <div id="userInfo" style="display:none;">
+        <p><strong>Wallet conectada:</strong> <span id="userWallet">-</span></p>
+        <p><strong>Ganancias:</strong> $<span id="userEarnings">0.00</span></p>
+        <button id="withdrawBtn">Retirar Ganancias</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="perfil.js"></script>
+</body>
+</html>
