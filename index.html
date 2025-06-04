@@ -30,7 +30,6 @@
   <script>
     const roomsContainer = document.getElementById("rooms");
     const searchInput = document.getElementById("searchInput");
-
     const roomsData = [];
 
     function createRoom(id, participants = 0) {
@@ -48,7 +47,7 @@
           width="400"
           height="400"
           style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
-          ></iframe>
+        ></iframe>
       `;
 
       roomsContainer.appendChild(room);
@@ -64,15 +63,26 @@
       }
     }
 
-    function joinRoom(id) {
-      const sortedRooms = [...roomsData].filter(r => r.participants < 200).sort((a, b) => b.participants - a.participants);
-      const target = sortedRooms[0];
+    async function joinRoom(id) {
+      if (typeof window.ethereum === 'undefined') {
+        alert('MetaMask no está disponible. Instala MetaMask para continuar.');
+        return;
+      }
 
-      if (target) {
-        alert(`Te has unido a la Sala #${target.id}`);
-        const roomEl = document.querySelector(`.room[data-id='${target.id}'] .participant-count`);
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const walletAddress = accounts[0];
+
+        alert(`Wallet conectada: ${walletAddress}\nTe has unido a la Sala #${id}`);
+
+        const roomEl = document.querySelector(`.room[data-id='${id}'] .participant-count`);
         let newCount = parseInt(roomEl.textContent) + 1;
         roomEl.textContent = newCount;
+
+        // Aquí puedes añadir lógica para enviar la dirección al backend o smart contract
+      } catch (error) {
+        console.error(error);
+        alert('Conexión a la wallet cancelada o fallida.');
       }
     }
 
