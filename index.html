@@ -2,83 +2,106 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CryptoSpin - Rueda de Sorteo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CryptoSpin - Sorteos en Cripto</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   <style>
-    body {
-      background: #121212;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 1rem;
-    }
     #wheelCanvas {
-      margin: 0 auto;
-      display: block;
+      display: none; /* Oculto hasta que el usuario se una */
+      margin: 20px auto;
       background: #222;
       border-radius: 50%;
       box-shadow: 0 0 15px #0f0;
     }
-    button {
-      margin-top: 20px;
-      background-color: #28a745;
-      border: none;
-      color: white;
-      padding: 12px 24px;
-      font-size: 18px;
-      border-radius: 30px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-    button:disabled {
-      background-color: #444;
-      cursor: not-allowed;
-    }
-    #result {
-      margin-top: 20px;
-      font-size: 24px;
-      font-weight: bold;
-      min-height: 30px;
-    }
   </style>
 </head>
-<body>
+<body class="bg-gray-900 text-white">
+  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin</header>
 
-  <h1>CryptoSpin - Rueda de Sorteo</h1>
+  <main class="p-6">
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">Bienvenido a CryptoSpin</h2>
+      <p>Participa en salas de sorteo automáticas y gana premios en criptomonedas.</p>
+    </section>
 
-  <canvas id="wheelCanvas" width="500" height="500"></canvas>
-  <br />
-  <button id="spinButton">Girar Rueda</button>
+    <!-- Buscador de salas -->
+    <div class="mb-6">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Buscar sala por número..."
+        class="w-full p-2 rounded text-black"
+      />
+    </div>
 
-  <div id="result"></div>
+    <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></section>
+
+    <!-- Aquí estará la rueda -->
+    <canvas id="wheelCanvas" width="500" height="500"></canvas>
+    <div id="result" class="text-center mt-4 text-2xl font-bold"></div>
+  </main>
+
+  <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
 
   <script>
-    const canvas = document.getElementById("wheelCanvas");
-    const ctx = canvas.getContext("2d");
-    const spinButton = document.getElementById("spinButton");
+    const roomsContainer = document.getElementById("rooms");
+    const searchInput = document.getElementById("searchInput");
+    const wheelCanvas = document.getElementById("wheelCanvas");
+    const ctx = wheelCanvas.getContext("2d");
     const resultDiv = document.getElementById("result");
 
     const segments = 200;
     const segmentAngle = (2 * Math.PI) / segments;
-    const radius = canvas.width / 2 - 20;
+    const radius = wheelCanvas.width / 2 - 20;
 
-    let currentAngle = 0;
-    let angularVelocity = 0;
-    let spinning = false;
+    const roomsData = [];
 
-    // Generar colores para segmentos (alternar dos colores para mejor visual)
+    // Crear salas
+    function createRoom(id, participants = 0) {
+      const room = document.createElement("div");
+      room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
+      room.setAttribute("data-id", id);
+      room.setAttribute("data-participants", participants);
+
+      room.innerHTML = `
+        <h3 class="text-lg font-bold mb-2">Sala #${id}</h3>
+        <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
+        <button class="join-btn mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">
+          Unirse por $0.50
+        </button>
+      `;
+
+      roomsContainer.appendChild(room);
+      roomsData.push({ id, participants });
+
+      // Evento botón unirse
+      room.querySelector(".join-btn").addEventListener("click", () => joinRoom(id));
+    }
+
+    // Rellenar salas
+    function populateRooms() {
+      for (let i = 1; i <= 10; i++) {
+        const randomParticipants = Math.floor(Math.random() * 200);
+        if (randomParticipants < 200) {
+          createRoom(i, randomParticipants);
+        }
+      }
+    }
+
+    // Dibujar rueda
     function getColor(i) {
       return i % 2 === 0 ? "#0f0" : "#050";
     }
 
-    function drawWheel() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let currentAngle = 0;
+    let spinning = false;
 
+    function drawWheel() {
+      ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
       ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.translate(wheelCanvas.width / 2, wheelCanvas.height / 2);
       ctx.rotate(currentAngle);
 
-      // Dibujar segmentos
       for (let i = 0; i < segments; i++) {
         ctx.beginPath();
         ctx.moveTo(0, 0);
@@ -89,7 +112,6 @@
         ctx.lineWidth = 0.3;
         ctx.stroke();
 
-        // Números
         ctx.save();
         ctx.fillStyle = "white";
         ctx.translate(
@@ -105,55 +127,49 @@
 
       ctx.restore();
 
-      // Indicador de flecha (fijo arriba)
+      // Flecha indicadora fija arriba
       ctx.fillStyle = "red";
       ctx.beginPath();
-      ctx.moveTo(canvas.width / 2 - 15, 10);
-      ctx.lineTo(canvas.width / 2 + 15, 10);
-      ctx.lineTo(canvas.width / 2, 40);
+      ctx.moveTo(wheelCanvas.width / 2 - 15, 10);
+      ctx.lineTo(wheelCanvas.width / 2 + 15, 10);
+      ctx.lineTo(wheelCanvas.width / 2, 40);
       ctx.closePath();
       ctx.fill();
     }
 
-    function spin() {
+    // Girar rueda con desaceleración lenta y 20s duración
+    function spinWheel() {
       if (spinning) return;
       spinning = true;
-      spinButton.disabled = true;
       resultDiv.textContent = "";
+      wheelCanvas.style.display = "block";
 
-      const duration = 20000; // 20 segundos total
-      const suspenseDuration = 5000; // últimos 5 segundos lentos
+      const duration = 20000; // 20 segundos
+      const suspenseDuration = 5000; // últimos 5 segundos muy lento
       const start = performance.now();
 
-      const maxAngularVelocity = 0.6; // velocidad inicial
-      const minAngularVelocity = 0.01; // velocidad mínima para "lento" final
+      const maxAngularVelocity = 0.6;
+      const minAngularVelocity = 0.01;
 
       function animate(time) {
         const elapsed = time - start;
+
         if (elapsed >= duration) {
           spinning = false;
-          angularVelocity = 0;
-
           // Calcular ganador
           const normalizedAngle = currentAngle % (2 * Math.PI);
           let winningIndex = Math.floor((segments - normalizedAngle / segmentAngle)) % segments;
           if (winningIndex < 0) winningIndex += segments;
 
           resultDiv.textContent = `¡Ganador: Segmento #${winningIndex + 1}!`;
-          spinButton.disabled = false;
           return;
         }
 
         if (elapsed < duration - suspenseDuration) {
-          // Desaceleración rápida (lineal) en los primeros 15 segundos
           angularVelocity = maxAngularVelocity * (1 - elapsed / (duration - suspenseDuration));
         } else {
-          // Últimos 5 segundos: desaceleración muy suave (exponencial)
           const suspenseElapsed = elapsed - (duration - suspenseDuration);
-          // Factor entre 0 y 1 para los últimos 5 segundos
           const t = suspenseElapsed / suspenseDuration;
-
-          // Easing cuadrático invertido para ralentizar la velocidad
           angularVelocity = minAngularVelocity + (maxAngularVelocity - minAngularVelocity) * (1 - t) * (1 - t);
         }
 
@@ -166,9 +182,38 @@
       requestAnimationFrame(animate);
     }
 
-    drawWheel();
+    // Lógica para unirse a sala y actualizar participantes
+    function joinRoom(id) {
+      const sortedRooms = [...roomsData].filter((r) => r.participants < 200).sort((a, b) => b.participants - a.participants);
+      const target = sortedRooms[0];
 
-    spinButton.addEventListener("click", spin);
+      if (target) {
+        alert(`Te has unido a la Sala #${target.id}`);
+        // Actualizar contador participante visualmente
+        const roomEl = document.querySelector(`.room[data-id='${target.id}'] .participant-count`);
+        let newCount = parseInt(roomEl.textContent) + 1;
+        roomEl.textContent = newCount;
+
+        // Actualizar datos internos
+        const roomData = roomsData.find((r) => r.id === target.id);
+        if (roomData) roomData.participants = newCount;
+
+        // Mostrar rueda y girar
+        spinWheel();
+      }
+    }
+
+    // Filtrar salas
+    searchInput.addEventListener("input", (e) => {
+      const value = e.target.value.toLowerCase();
+      document.querySelectorAll(".room").forEach((room) => {
+        const roomId = room.getAttribute("data-id");
+        room.style.display = roomId.includes(value) ? "block" : "none";
+      });
+    });
+
+    populateRooms();
+    drawWheel(); // Rueda dibujada inicialmente (oculta hasta unir)
   </script>
 </body>
 </html>
