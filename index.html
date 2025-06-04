@@ -79,17 +79,19 @@
       priceSpan.dataset.bnbAmount = bnbAmount;
     }
 
-    function createRoom(id, participants = 0) {
+    function createRoom(id) {
       const room = document.createElement("div");
       room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
       room.setAttribute("data-id", id);
-      room.setAttribute("data-participants", participants);
+      room.setAttribute("data-participants", 0);
+      room.setAttribute("data-selected-numbers", JSON.stringify([])); // para guardar números ya vendidos
 
       const iframeId = `wheel-${id}`;
       const selectId = `numberSelect-${id}`;
       const buttonId = `joinBtn-${id}`;
       const priceSpanId = `priceSpan-${id}`;
 
+      // Números disponibles, inicialmente 1 a 200
       const availableNumbers = Array.from({ length: 200 }, (_, i) => i + 1);
 
       room.innerHTML = `
@@ -97,7 +99,7 @@
           <h3 class="text-lg font-bold flex items-center gap-2">Sala #${id}</h3>
           ${extraInfoHTML}
         </div>
-        <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
+        <p>Participantes: <span class="participant-count">0</span> / 200</p>
         <label for="${selectId}" class="block mt-2 text-sm">Escoge tu número:</label>
         <select id="${selectId}" class="w-full p-2 text-black rounded mb-2">
           <option value="" selected disabled>-- Selecciona un número --</option>
@@ -140,10 +142,7 @@
 
     async function populateRooms() {
       for (let i = 1; i <= 10; i++) {
-        const randomParticipants = (i === 1) ? 41 : Math.floor(Math.random() * 200);
-        if (randomParticipants < 200) {
-          createRoom(i, randomParticipants);
-        }
+        createRoom(i);
       }
       // Actualizar precios cada 15 segundos para rapidez y frescura
       setInterval(() => {
@@ -243,22 +242,36 @@
 
         alert(`Pago recibido en BNB!\nNúmero seleccionado: ${selectedNumber}\nTx: ${txHash}\n¡Te has unido a la Sala #${roomId}!`);
 
+        // Actualizar contador
         let newCount = parseInt(countEl.textContent) + 1;
         countEl.textContent = newCount;
+        roomEl.setAttribute("data-participants", newCount);
 
-        selectEl.querySelector(`option[value="${selectedNumber}"]`).disabled = true;
+        // Marcar número como vendido para deshabilitarlo
+        let selectedNumbers = JSON.parse(roomEl.getAttribute("data-selected-numbers"));
+        selectedNumbers.push(parseInt(selectedNumber));
+        roomEl.setAttribute("data-selected-numbers", JSON.stringify(selectedNumbers));
+
+        // Deshabilitar la opción elegida
+        const optionToDisable = selectEl.querySelector(`option[value="${selectedNumber}"]`);
+        if(optionToDisable){
+          optionToDisable.disabled = true;
+        }
+
+        // Reset selección y botón
         selectEl.value = "";
         joinBtn.disabled = true;
         joinBtn.classList.add("opacity-50", "cursor-not-allowed");
         joinBtn.textContent = "Unirse por $0.50";
 
+        // Si sala llena, girar rueda automáticamente
         if (newCount >= 200) {
           alert("¡La sala está llena! Girando la ruleta automáticamente...");
           const iframe = roomEl.querySelector("iframe");
-          iframe.contentWindow.postMessage({ action: 'spin' }, '*');
+          iframe.contentWindow.postMessage({ action: 'spin' }, "*");
         }
-      } catch (err) {
-        alert("Error en la transacción: " + err.message);
+      } catch (error) {
+        alert("Error en el pago o en la conexión: " + error.message);
         joinBtn.disabled = false;
         joinBtn.textContent = "Unirse por $0.50";
       }
