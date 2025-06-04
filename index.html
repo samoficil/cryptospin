@@ -6,12 +6,12 @@
   <title>CryptoSpin - Sorteos en Cripto</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   <style>
-    #wheelCanvas {
-      display: none; /* Oculto hasta que el usuario se una */
-      margin: 20px auto;
+    canvas {
       background: #222;
       border-radius: 50%;
       box-shadow: 0 0 15px #0f0;
+      display: block;
+      margin: 20px auto;
     }
   </style>
 </head>
@@ -35,10 +35,6 @@
     </div>
 
     <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></section>
-
-    <!-- Aquí estará la rueda -->
-    <canvas id="wheelCanvas" width="500" height="500"></canvas>
-    <div id="result" class="text-center mt-4 text-2xl font-bold"></div>
   </main>
 
   <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
@@ -46,13 +42,10 @@
   <script>
     const roomsContainer = document.getElementById("rooms");
     const searchInput = document.getElementById("searchInput");
-    const wheelCanvas = document.getElementById("wheelCanvas");
-    const ctx = wheelCanvas.getContext("2d");
-    const resultDiv = document.getElementById("result");
 
     const segments = 200;
     const segmentAngle = (2 * Math.PI) / segments;
-    const radius = wheelCanvas.width / 2 - 20;
+    const radius = 200;
 
     const roomsData = [];
 
@@ -69,6 +62,7 @@
         <button class="join-btn mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">
           Unirse por $0.50
         </button>
+        <div class="wheel-container mt-4"></div> <!-- Aquí va la rueda y resultado -->
       `;
 
       roomsContainer.appendChild(room);
@@ -88,18 +82,16 @@
       }
     }
 
-    // Dibujar rueda
+    // Color por segmento
     function getColor(i) {
       return i % 2 === 0 ? "#0f0" : "#050";
     }
 
-    let currentAngle = 0;
-    let spinning = false;
-
-    function drawWheel() {
-      ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+    // Función para dibujar la rueda en un canvas dado
+    function drawWheel(ctx, currentAngle) {
+      ctx.clearRect(0, 0, radius * 2 + 40, radius * 2 + 40);
       ctx.save();
-      ctx.translate(wheelCanvas.width / 2, wheelCanvas.height / 2);
+      ctx.translate(radius + 20, radius + 20);
       ctx.rotate(currentAngle);
 
       for (let i = 0; i < segments; i++) {
@@ -130,22 +122,24 @@
       // Flecha indicadora fija arriba
       ctx.fillStyle = "red";
       ctx.beginPath();
-      ctx.moveTo(wheelCanvas.width / 2 - 15, 10);
-      ctx.lineTo(wheelCanvas.width / 2 + 15, 10);
-      ctx.lineTo(wheelCanvas.width / 2, 40);
+      ctx.moveTo(radius + 20 - 15, 10);
+      ctx.lineTo(radius + 20 + 15, 10);
+      ctx.lineTo(radius + 20, 40);
       ctx.closePath();
       ctx.fill();
     }
 
-    // Girar rueda con desaceleración lenta y 20s duración
-    function spinWheel() {
-      if (spinning) return;
-      spinning = true;
+    // Girar rueda con desaceleración lenta y duración 20s
+    function spinWheel(canvas, resultDiv) {
+      if (canvas.spinning) return;
+      canvas.spinning = true;
       resultDiv.textContent = "";
-      wheelCanvas.style.display = "block";
+
+      const ctx = canvas.getContext("2d");
+      let currentAngle = 0;
 
       const duration = 20000; // 20 segundos
-      const suspenseDuration = 5000; // últimos 5 segundos muy lento
+      const suspenseDuration = 5000; // últimos 5 segundos lentos
       const start = performance.now();
 
       const maxAngularVelocity = 0.6;
@@ -155,8 +149,7 @@
         const elapsed = time - start;
 
         if (elapsed >= duration) {
-          spinning = false;
-          // Calcular ganador
+          canvas.spinning = false;
           const normalizedAngle = currentAngle % (2 * Math.PI);
           let winningIndex = Math.floor((segments - normalizedAngle / segmentAngle)) % segments;
           if (winningIndex < 0) winningIndex += segments;
@@ -165,6 +158,7 @@
           return;
         }
 
+        let angularVelocity;
         if (elapsed < duration - suspenseDuration) {
           angularVelocity = maxAngularVelocity * (1 - elapsed / (duration - suspenseDuration));
         } else {
@@ -174,7 +168,7 @@
         }
 
         currentAngle += angularVelocity;
-        drawWheel();
+        drawWheel(ctx, currentAngle);
 
         requestAnimationFrame(animate);
       }
@@ -182,38 +176,60 @@
       requestAnimationFrame(animate);
     }
 
-    // Lógica para unirse a sala y actualizar participantes
+    // Lógica para unirse a sala y mostrar la rueda dentro de esa sala
     function joinRoom(id) {
-      const sortedRooms = [...roomsData].filter((r) => r.participants < 200).sort((a, b) => b.participants - a.participants);
-      const target = sortedRooms[0];
+      const roomEl = document.querySelector(`.room[data-id='${id}']`);
+      if (!roomEl) return;
 
-      if (target) {
-        alert(`Te has unido a la Sala #${target.id}`);
-        // Actualizar contador participante visualmente
-        const roomEl = document.querySelector(`.room[data-id='${target.id}'] .participant-count`);
-        let newCount = parseInt(roomEl.textContent) + 1;
-        roomEl.textContent = newCount;
-
-        // Actualizar datos internos
-        const roomData = roomsData.find((r) => r.id === target.id);
-        if (roomData) roomData.participants = newCount;
-
-        // Mostrar rueda y girar
-        spinWheel();
+      // Actualizar participantes
+      const participantCountEl = roomEl.querySelector(".participant-count");
+      let count = parseInt(participantCountEl.textContent);
+      if (count >= 200) {
+        alert("La sala está llena");
+        return;
       }
+      count++;
+      participantCountEl.textContent = count;
+
+      // Actualizar en roomsData también
+      const roomData = roomsData.find(r => r.id === id);
+      if (roomData) roomData.participants = count;
+
+      alert(`Te has unido a la Sala #${id}`);
+
+      // Crear canvas y resultado si no existen
+      const wheelContainer = roomEl.querySelector(".wheel-container");
+      wheelContainer.innerHTML = ""; // Limpiar para reiniciar
+
+      const canvas = document.createElement("canvas");
+      canvas.width = radius * 2 + 40;
+      canvas.height = radius * 2 + 40;
+      canvas.style.margin = "0 auto";
+      canvas.style.display = "block";
+
+      const resultDiv = document.createElement("div");
+      resultDiv.style.textAlign = "center";
+      resultDiv.style.marginTop = "10px";
+      resultDiv.style.fontWeight = "bold";
+      resultDiv.style.fontSize = "1.5rem";
+
+      wheelContainer.appendChild(canvas);
+      wheelContainer.appendChild(resultDiv);
+
+      // Empezar el giro
+      spinWheel(canvas, resultDiv);
     }
 
     // Filtrar salas
     searchInput.addEventListener("input", (e) => {
       const value = e.target.value.toLowerCase();
-      document.querySelectorAll(".room").forEach((room) => {
+      document.querySelectorAll(".room").forEach(room => {
         const roomId = room.getAttribute("data-id");
         room.style.display = roomId.includes(value) ? "block" : "none";
       });
     });
 
     populateRooms();
-    drawWheel(); // Rueda dibujada inicialmente (oculta hasta unir)
   </script>
 </body>
 </html>
