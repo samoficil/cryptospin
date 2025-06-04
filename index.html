@@ -16,8 +16,8 @@
 </head>
 <body class="bg-gray-900 text-white">
   <header class="p-4 bg-gray-800 text-center text-2xl font-bold flex justify-between items-center">
-    <div>CryptoSpin - Solo BNB en tiempo real</div>
-    <button id="btnProfile" class="bg-green-600 py-1 px-3 rounded hover:bg-green-700">Perfil</button>
+    CryptoSpin - Solo BNB en tiempo real
+    <button id="profileBtn" class="bg-green-600 px-4 py-1 rounded hover:bg-green-700">Perfil</button>
   </header>
 
   <main class="p-6">
@@ -32,24 +32,13 @@
   <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
 
   <!-- Modal Perfil -->
-  <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-75 hidden justify-center items-center p-4">
-    <div class="bg-gray-800 rounded-lg max-w-lg w-full p-6 relative">
-      <button id="closeProfile" class="absolute top-3 right-3 text-white text-xl font-bold">&times;</button>
+  <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden">
+    <div class="bg-gray-800 p-6 rounded-lg max-w-md w-full">
       <h3 class="text-2xl font-bold mb-4">Perfil de Usuario</h3>
-
-      <div id="walletAddress" class="mb-2 font-mono break-all"></div>
-      <div id="userBalance" class="mb-4 text-green-400 text-xl font-semibold">Saldo: cargando...</div>
-
-      <hr class="border-green-500 mb-4" />
-
-      <h4 class="font-semibold mb-2">Retirar ganancias</h4>
-      <form id="withdrawForm" class="space-y-3">
-        <input type="text" id="withdrawAddress" placeholder="Dirección destino (BSC)" class="w-full p-2 rounded text-black" required />
-        <input type="number" id="withdrawAmount" placeholder="Monto en BNB" class="w-full p-2 rounded text-black" step="0.0001" min="0.0001" required />
-        <button type="submit" class="bg-green-600 hover:bg-green-700 py-2 px-4 rounded w-full font-bold">Enviar Retiro</button>
-      </form>
-
-      <div id="withdrawStatus" class="mt-3"></div>
+      <p><strong>Wallet:</strong> <span id="userWallet">-</span></p>
+      <p><strong>Ganancias BNB:</strong> <span id="userEarnings">0</span></p>
+      <button id="withdrawBtn" class="mt-4 w-full bg-green-600 hover:bg-green-700 py-2 rounded text-white font-bold">Retirar Ganancias</button>
+      <button id="closeProfileBtn" class="mt-2 w-full bg-gray-600 hover:bg-gray-700 py-2 rounded text-white font-bold">Cerrar</button>
     </div>
   </div>
 
