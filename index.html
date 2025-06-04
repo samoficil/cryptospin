@@ -37,9 +37,9 @@
         style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
       ></iframe>
       <button
-        onclick="spinWheel(${id})"
         class="mt-4 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded hidden spin-btn"
         id="spin-btn-${id}"
+        onclick="spinWheel(${id})"
       >
         Girar Rueda (Admin)
       </button>
@@ -51,47 +51,52 @@
 
   function populateRooms() {
     for (let i = 1; i <= 10; i++) {
-      const randomParticipants = (i === 1) ? 199 : Math.floor(Math.random() * 200);
-      if (randomParticipants < 200) {
-        createRoom(i, randomParticipants);
-      }
+      const randomParticipants = Math.floor(Math.random() * 200);
+      createRoom(i, randomParticipants);
     }
   }
 
-  function connectWallet(roomId) {
-    if (typeof window.ethereum !== 'undefined') {
-      window.ethereum.request({ method: 'eth_requestAccounts' })
-        .then(accounts => {
-          const wallet = accounts[0];
-          alert(`Wallet conectada: ${wallet}\n¡Te has unido a la Sala #${roomId} pagando $0.50!`);
-          
-          const roomEl = document.querySelector(`.room[data-id='${roomId}'] .participant-count`);
-          let newCount = parseInt(roomEl.textContent) + 1;
-          roomEl.textContent = newCount;
+  async function connectWallet(roomId) {
+    if (typeof window.ethereum === 'undefined') {
+      alert('Por favor instala MetaMask.');
+      return;
+    }
 
-          if (newCount >= 200) {
-            if (wallet.toLowerCase() === adminWallet.toLowerCase()) {
-              document.getElementById(`spin-btn-${roomId}`).classList.remove("hidden");
-            } else {
-              spinWheel(roomId); // giro automático
-            }
-          }
-        })
-        .catch(err => {
-          alert('Error al conectar wallet: ' + err.message);
-        });
-    } else {
-      alert('Por favor instala MetaMask para unirte.');
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const wallet = accounts[0];
+      alert(`Wallet conectada: ${wallet}`);
+
+      const roomEl = document.querySelector(`.room[data-id="${roomId}"]`);
+      const countSpan = roomEl.querySelector('.participant-count');
+      let currentCount = parseInt(countSpan.textContent);
+      currentCount++;
+      countSpan.textContent = currentCount;
+
+      // Verificar si llegó a 200
+      if (currentCount >= 200) {
+        if (wallet.toLowerCase() === adminWallet.toLowerCase()) {
+          // Si eres tú, muestra el botón
+          const spinBtn = document.getElementById(`spin-btn-${roomId}`);
+          spinBtn.classList.remove("hidden");
+        } else {
+          // Si NO eres tú, gira automático
+          spinWheel(roomId);
+        }
+      }
+
+    } catch (err) {
+      alert("Error al conectar wallet: " + err.message);
     }
   }
 
   function spinWheel(roomId) {
-    alert(`🌀 ¡GIRANDO LA RUEDA de la Sala #${roomId}!`);
     const iframe = document.getElementById(`wheel-${roomId}`);
-    iframe.contentWindow.postMessage('spin', '*');
+    iframe.contentWindow.postMessage("spin", "*");
+    alert(`🎯 ¡Girando la Rueda en la Sala #${roomId}!`);
   }
 
-  searchInput.addEventListener("input", (e) => {
+  searchInput?.addEventListener("input", (e) => {
     const value = e.target.value.toLowerCase();
     document.querySelectorAll(".room").forEach(room => {
       const roomId = room.getAttribute("data-id");
