@@ -1,6 +1,6 @@
 const roomsContainer = document.getElementById("rooms");
 const YOUR_WALLET = "0x659a0f0D27378c9f25B97B0fE0F0df6fD1a6D3d4";
-const USD_AMOUNT = 0.50; // Monto fijo en USD
+const USD_AMOUNT = 0.50;
 
 const extraInfoHTML = `
   <div class="ml-4 text-sm space-y-1 max-w-xs">
@@ -14,9 +14,23 @@ const extraInfoHTML = `
   </div>
 `;
 
-// Para guardar el último precio válido
+// Guardar ganancias por usuario en localStorage (simple)
+const EARNINGS_KEY = "cryptospin_earnings";
+
 let cachedBNBPrice = null;
 let lastPriceFetch = 0;
+let userAccount = null;
+
+function saveEarnings(account, amount) {
+  let earnings = JSON.parse(localStorage.getItem(EARNINGS_KEY) || "{}");
+  earnings[account] = (earnings[account] || 0) + amount;
+  localStorage.setItem(EARNINGS_KEY, JSON.stringify(earnings));
+}
+
+function getEarnings(account) {
+  let earnings = JSON.parse(localStorage.getItem(EARNINGS_KEY) || "{}");
+  return earnings[account] || 0;
+}
 
 function createRoom(id) {
   const room = document.createElement("div");
@@ -29,7 +43,6 @@ function createRoom(id) {
   const buttonId = `joinBtn-${id}`;
   const priceSpanId = `priceSpan-${id}`;
 
-  // Números disponibles inicialmente todos 1 a 200
   const availableNumbers = Array.from({ length: 200 }, (_, i) => i + 1);
 
   room.innerHTML = `
@@ -75,14 +88,13 @@ function createRoom(id) {
   });
 
   joinBtn.addEventListener("click", () => joinRoom(id));
-  updatePrice(priceSpan); // obtener el precio al crear la sala
+  updatePrice(priceSpan);
 }
 
 async function fetchBNBPrice() {
   const now = Date.now();
-  if (cachedBNBPrice && now - lastPriceFetch < 15000) {
-    return cachedBNBPrice;
-  }
+  if (cachedBNBPrice && now - lastPriceFetch < 15000) return cachedBNBPrice;
+
   try {
     const response = await fetch(
       'https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd'
@@ -94,7 +106,7 @@ async function fetchBNBPrice() {
     return cachedBNBPrice;
   } catch (e) {
     console.warn('Error obteniendo precio BNB:', e);
-    return cachedBNBPrice || 300; // fallback a precio fijo si falla
+    return cachedBNBPrice || 300;
   }
 }
 
@@ -106,10 +118,8 @@ async function updatePrice(priceSpan) {
 }
 
 async function populateRooms() {
-  for (let i = 1; i <= 10; i++) {
-    createRoom(i);
-  }
-  // Actualizar precios cada 60 segundos para mantenerlos frescos
+  for (let i = 1; i <= 10; i++) createRoom(i);
+
   setInterval(() => {
     document.querySelectorAll(".room").forEach(room => {
       const priceSpan = room.querySelector("strong > span");
@@ -154,16 +164,13 @@ async function switchToBSC() {
   }
 }
 
-function getEarnings() {
-  const earnings = localStorage.getItem("cryptospin_earnings");
-  return earnings ? parseFloat(earnings) : 0;
-}
-
-function setEarnings(value) {
-  localStorage.setItem("cryptospin_earnings", value.toFixed(6));
-}
-
 async function joinRoom(roomId) {
+  if (!userAccount) {
+    alert("Conéctate a MetaMask para participar.");
+    await connectWallet();
+    if (!userAccount) return;
+  }
+
   const roomEl = document.querySelector(`.room[data-id='${roomId}']`);
   const countEl = roomEl.querySelector(".participant-count");
   const selectEl = roomEl.querySelector("select");
@@ -172,12 +179,12 @@ async function joinRoom(roomId) {
   const priceSpan = roomEl.querySelector("strong > span");
 
   if (!selectedNumber) {
-    alert("Por favor selecciona un número antes de unirte.");
+    alert("Selecciona un número antes de unirte.");
     return;
   }
 
   if (!window.ethereum) {
-    alert("Por favor instala MetaMask u otra wallet compatible con Binance Smart Chain para pagar.");
+    alert("Instala MetaMask o wallet compatible Binance Smart Chain.");
     return;
   }
 
@@ -193,7 +200,10 @@ async function joinRoom(roomId) {
 
   try {
     const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-    const from = accounts[0];
+    userAccount = accounts[0];
+    updateUserWalletUI();
+
+    const from = userAccount;
     const bnbAmount = priceSpan.dataset.bnbAmount;
 
     joinBtn.textContent = "Enviando transacción...";
@@ -201,72 +211,109 @@ async function joinRoom(roomId) {
     const txParams = {
       from,
       to: YOUR_WALLET,
-      value: '0x' + (Math.floor(bnbAmount * 1e18)).toString(16)
+      value: "0x" + (parseFloat(bnbAmount) * 1e18).toString(16)
     };
 
-    await window.ethereum.request({
-      method: 'eth_sendTransaction',
-      params: [txParams],
+    const txHash = await window.ethereum.request({
+      method: "eth_sendTransaction",
+      params: [txParams]
     });
 
-    // Sumar participantes y actualizar
-    let currentCount = parseInt(countEl.textContent);
-    currentCount++;
-    countEl.textContent = currentCount;
+    // Guardar ganancias para el usuario
+    saveEarnings(userAccount, USD_AMOUNT);
 
-    // Simular ganancia para el usuario (por ejemplo +0.01 BNB)
-    let earnings = getEarnings();
-    earnings += 0.01;
-    setEarnings(earnings);
+    const currentCount = parseInt(countEl.textContent);
+    countEl.textContent = currentCount + 1;
 
-    alert("¡Participación registrada! Ahora tienes " + earnings.toFixed(6) + " BNB en ganancias simuladas.");
-    joinBtn.textContent = "Unirse por $0.50";
-    joinBtn.disabled = false;
-    selectEl.value = "";
-    selectEl.dispatchEvent(new Event('change'));
+    alert(`Pago recibido. ¡Buena suerte con el número ${selectedNumber}!`);
+
   } catch (error) {
-    alert("Error en la transacción: " + error.message);
-    joinBtn.textContent = "Unirse por $0.50";
-    joinBtn.disabled = false;
+    console.error(error);
+    alert("Error al enviar el pago: " + (error.message || error));
   }
+
+  joinBtn.disabled = false;
+  joinBtn.textContent = "Unirse por $0.50";
 }
 
-// Perfil modal y lógica ganancias
-
-const profileBtn = document.getElementById("profileBtn");
+// Perfil modal handlers
 const profileModal = document.getElementById("profileModal");
-const closeProfile = document.getElementById("closeProfile");
-const earningsEl = document.getElementById("earnings");
+const profileBtn = document.getElementById("profileBtn");
+const closeProfileBtn = document.getElementById("closeProfileBtn");
 const withdrawBtn = document.getElementById("withdrawBtn");
+const userWalletSpan = document.getElementById("userWallet");
+const userEarningsSpan = document.getElementById("userEarnings");
 
-function updateProfileEarnings() {
-  const earnings = getEarnings();
-  earningsEl.textContent = earnings.toFixed(6) + " BNB";
-}
-
-profileBtn.addEventListener("click", () => {
-  updateProfileEarnings();
+profileBtn.addEventListener("click", async () => {
+  if (!userAccount) {
+    await connectWallet();
+  }
+  if (!userAccount) return;
+  updateUserWalletUI();
+  updateUserEarningsUI();
   profileModal.classList.remove("hidden");
 });
 
-closeProfile.addEventListener("click", () => {
+closeProfileBtn.addEventListener("click", () => {
   profileModal.classList.add("hidden");
 });
 
-withdrawBtn.addEventListener("click", () => {
-  let earnings = getEarnings();
+withdrawBtn.addEventListener("click", async () => {
+  const earnings = getEarnings(userAccount);
   if (earnings <= 0) {
     alert("No tienes ganancias para retirar.");
     return;
   }
-  // Aquí se debería integrar el proceso real de retiro
-  // Por ahora, solo resetear ganancias simuladas
-  if (confirm(`¿Quieres retirar tus ${earnings.toFixed(6)} BNB simulados?`)) {
-    setEarnings(0);
-    updateProfileEarnings();
-    alert("Retiro simulado exitoso. Ganancias ahora 0 BNB.");
+
+  if (!window.ethereum) {
+    alert("Instala MetaMask o wallet compatible.");
+    return;
+  }
+
+  const isSwitched = await switchToBSC();
+  if (!isSwitched) return;
+
+  try {
+    const amountBNB = (earnings / cachedBNBPrice).toFixed(6);
+    const txParams = {
+      from: YOUR_WALLET,
+      to: userAccount,
+      value: "0x0"
+    };
+
+    alert("Para retirar tus ganancias, contacta al administrador con la siguiente wallet:\n" + YOUR_WALLET +
+      "\n\nActualmente la transferencia automática no está habilitada por limitaciones de seguridad.\n\n" +
+      "Pero tus ganancias están registradas y puedes verificarlo aquí.");
+
+  } catch (error) {
+    alert("Error en retiro: " + error.message);
   }
 });
 
-// Inicializar salas
-populateRooms();
+async function connectWallet() {
+  if (!window.ethereum) {
+    alert("Instala MetaMask o wallet compatible Binance Smart Chain.");
+    return;
+  }
+  try {
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+    userAccount = accounts[0];
+    updateUserWalletUI();
+  } catch (error) {
+    console.error(error);
+    alert("No se pudo conectar la wallet.");
+  }
+}
+
+function updateUserWalletUI() {
+  userWalletSpan.textContent = userAccount || "-";
+}
+
+function updateUserEarningsUI() {
+  const earnings = getEarnings(userAccount);
+  userEarningsSpan.textContent = earnings.toFixed(2);
+}
+
+window.addEventListener("load", () => {
+  populateRooms();
+});
