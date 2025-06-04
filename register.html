@@ -4,47 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Registro - CryptoSpin</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="style.css" rel="stylesheet" />
 </head>
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
-  <form id="registerForm" class="bg-gray-800 p-6 rounded shadow-md max-w-sm w-full space-y-4">
-    <h1 class="text-3xl font-bold text-green-400 mb-6 text-center">Registro</h1>
-    <input type="text" id="username" placeholder="Nombre de usuario" class="w-full p-3 rounded bg-gray-700 text-white" required />
-    <input type="email" id="email" placeholder="Correo electrónico" class="w-full p-3 rounded bg-gray-700 text-white" required />
-    <input type="password" id="password" placeholder="Contraseña" class="w-full p-3 rounded bg-gray-700 text-white" required />
-    <button type="submit" class="w-full bg-green-500 hover:bg-green-600 py-3 rounded font-bold transition">Registrar</button>
-    <p class="text-sm text-center text-gray-400">¿Ya tienes cuenta? <a href="login.html" class="text-blue-400 underline">Inicia sesión</a></p>
-    <p id="error" class="text-red-500 text-center"></p>
+  <form id="registerForm" class="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md" autocomplete="off">
+    <h2 class="text-2xl font-bold mb-4 text-center">Registrarse</h2>
+    <label for="newUsername" class="block mb-1 font-semibold">Usuario</label>
+    <input type="text" id="newUsername" name="newUsername" required class="input" />
+    <label for="newEmail" class="block mt-4 mb-1 font-semibold">Correo Electrónico</label>
+    <input type="email" id="newEmail" name="newEmail" required class="input" />
+    <label for="newPassword" class="block mt-4 mb-1 font-semibold">Contraseña</label>
+    <input type="password" id="newPassword" name="newPassword" required class="input" />
+    <button type="submit" class="btn w-full mt-6">Crear Cuenta</button>
+    <p class="mt-4 text-center">
+      ¿Ya tienes cuenta? <a href="login.html" class="link">Iniciar sesión</a>
+    </p>
   </form>
 
-  <script>
-    const form = document.getElementById('registerForm');
-    const error = document.getElementById('error');
-
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      error.textContent = '';
-
-      const username = form.username.value.trim();
-      const email = form.email.value.trim().toLowerCase();
-      const password = form.password.value;
-
-      let users = JSON.parse(localStorage.getItem('users') || '[]');
-
-      if(users.some(u => u.username === username)) {
-        error.textContent = '❌ El nombre de usuario ya está en uso.';
-        return;
-      }
-      if(users.some(u => u.email === email)) {
-        error.textContent = '❌ El correo electrónico ya está registrado.';
-        return;
-      }
-
-      users.push({ username, email, password });
-      localStorage.setItem('users', JSON.stringify(users));
-
-      window.location.href = 'login.html';
-    });
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
