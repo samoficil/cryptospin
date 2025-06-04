@@ -3,44 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CryptoSpin - Solo BNB en tiempo real</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <style>
-    iframe {
-      pointer-events: none;
-      border-radius: 12px;
-      border: 2px solid #4ade80;
-      margin-top: 20px;
-    }
-  </style>
+  <title>Lotería BSC</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body class="bg-gray-900 text-white">
-  <header class="p-4 bg-gray-800 text-center text-2xl font-bold flex justify-between items-center">
-    CryptoSpin - Solo BNB en tiempo real
-    <button id="profileBtn" class="bg-green-600 px-4 py-1 rounded hover:bg-green-700">Perfil</button>
+<body>
+  <header>
+    <h1>Lotería en Binance Smart Chain</h1>
+    <nav>
+      <a href="index.html">Inicio</a> |
+      <a href="perfil.html">Perfil</a>
+    </nav>
   </header>
 
-  <main class="p-6">
-    <section class="mb-6">
-      <h2 class="text-xl font-semibold mb-2">Participa y paga solo en BNB</h2>
-      <p>Selecciona un número y paga $0.50 en BNB para unirte.</p>
-    </section>
-
-    <div id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  <main>
+    <section id="roomsContainer"></section>
   </main>
-
-  <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
-
-  <!-- Modal Perfil -->
-  <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden">
-    <div class="bg-gray-800 p-6 rounded-lg max-w-md w-full">
-      <h3 class="text-2xl font-bold mb-4">Perfil de Usuario</h3>
-      <p><strong>Wallet:</strong> <span id="userWallet">-</span></p>
-      <p><strong>Ganancias BNB:</strong> <span id="userEarnings">0</span></p>
-      <button id="withdrawBtn" class="mt-4 w-full bg-green-600 hover:bg-green-700 py-2 rounded text-white font-bold">Retirar Ganancias</button>
-      <button id="closeProfileBtn" class="mt-2 w-full bg-gray-600 hover:bg-gray-700 py-2 rounded text-white font-bold">Cerrar</button>
-    </div>
-  </div>
 
   <script src="app.js"></script>
 </body>
