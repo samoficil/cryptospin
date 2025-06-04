@@ -1,0 +1,94 @@
+<!-- Proyecto: Plataforma de Sorteos con CriptoPagos -->
+<!-- Nombre temporal: CryptoSpin -->
+
+<!-- Este esqueleto HTML básico marca el inicio del desarrollo -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptoSpin - Sorteos en Cripto</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white">
+  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">
+    CryptoSpin
+  </header>
+
+  <main class="p-6">
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">Bienvenido a CryptoSpin</h2>
+      <p>Participa en salas de sorteo automáticas y gana premios en criptomonedas.</p>
+    </section>
+
+    <!-- Buscador de salas -->
+    <div class="mb-6">
+      <input type="text" id="searchInput" placeholder="Buscar sala por número..." class="w-full p-2 rounded text-black" />
+    </div>
+
+    <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Aquí se insertarán las salas dinámicamente -->
+    </section>
+  </main>
+
+  <footer class="p-4 bg-gray-800 text-center">
+    &copy; 2025 CryptoSpin. Todos los derechos reservados.
+  </footer>
+
+  <script>
+    const roomsContainer = document.getElementById("rooms");
+    const searchInput = document.getElementById("searchInput");
+
+    const roomsData = [];
+
+    function createRoom(id, participants = 0) {
+      const room = document.createElement("div");
+      room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
+      room.setAttribute("data-id", id);
+      room.setAttribute("data-participants", participants);
+
+      room.innerHTML = `
+        <h3 class="text-lg font-bold mb-2">Sala #${id}</h3>
+        <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
+        <button onclick="joinRoom(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
+      `;
+
+      roomsContainer.appendChild(room);
+      roomsData.push({ id, participants });
+    }
+
+    function populateRooms() {
+      for (let i = 1; i <= 10; i++) {
+        const randomParticipants = Math.floor(Math.random() * 200);
+        if (randomParticipants < 200) {
+          createRoom(i, randomParticipants);
+        }
+      }
+    }
+
+    function joinRoom(id) {
+      // Lógica de unión a la sala más cercana a llenarse
+      const sortedRooms = [...roomsData].filter(r => r.participants < 200).sort((a, b) => b.participants - a.participants);
+      const target = sortedRooms[0];
+
+      if (target) {
+        alert(`Te has unido a la Sala #${target.id}`);
+        // Actualizar participante visualmente
+        const roomEl = document.querySelector(`.room[data-id='${target.id}'] .participant-count`);
+        let newCount = parseInt(roomEl.textContent) + 1;
+        roomEl.textContent = newCount;
+      }
+    }
+
+    searchInput.addEventListener("input", (e) => {
+      const value = e.target.value.toLowerCase();
+      document.querySelectorAll(".room").forEach(room => {
+        const roomId = room.getAttribute("data-id");
+        room.style.display = roomId.includes(value) ? "block" : "none";
+      });
+    });
+
+    populateRooms();
+  </script>
+</body>
+</html>
