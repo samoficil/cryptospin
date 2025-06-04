@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CryptoSpin - Solo BNB</title>
+  <title>CryptoSpin - Solo BNB en tiempo real</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   <style>
     iframe {
@@ -15,7 +15,7 @@
   </style>
 </head>
 <body class="bg-gray-900 text-white">
-  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin - Solo BNB</header>
+  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin - Solo BNB en tiempo real</header>
 
   <main class="p-6">
     <section class="mb-6">
@@ -31,9 +31,7 @@
   <script>
     const roomsContainer = document.getElementById("rooms");
     const YOUR_WALLET = "0x659a0f0D27378c9f25B97B0fE0F0df6fD1a6D3d4";
-    const BNB_TO_USD = 669.46; // Precio de 1 BNB en USD
-    const USD_AMOUNT = 0.50; // Monto en USD
-    const BNB_AMOUNT = USD_AMOUNT / BNB_TO_USD; // Cantidad de BNB a enviar
+    const USD_AMOUNT = 0.50; // Monto fijo en USD
 
     const extraInfoHTML = `
       <div class="ml-4 text-sm space-y-1 max-w-xs">
@@ -56,6 +54,7 @@
       const iframeId = `wheel-${id}`;
       const selectId = `numberSelect-${id}`;
       const buttonId = `joinBtn-${id}`;
+      const priceSpanId = `priceSpan-${id}`;
 
       const availableNumbers = Array.from({ length: 200 }, (_, i) => i + 1);
 
@@ -70,6 +69,9 @@
           <option value="" selected disabled>-- Selecciona un número --</option>
           ${availableNumbers.map(n => `<option value="${n}">${n}</option>`).join("")}
         </select>
+        <div class="mb-2">
+          <span>Precio a pagar: <strong><span id="${priceSpanId}">Calculando...</span> BNB</strong></span>
+        </div>
         <button id="${buttonId}" disabled
           class="bg-green-600 opacity-50 cursor-not-allowed hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">
           Unirse por $0.50
@@ -86,6 +88,7 @@
 
       const selectEl = document.getElementById(selectId);
       const joinBtn = document.getElementById(buttonId);
+      const priceSpan = document.getElementById(priceSpanId);
 
       selectEl.addEventListener("change", () => {
         if (selectEl.value) {
@@ -98,15 +101,47 @@
       });
 
       joinBtn.addEventListener("click", () => joinRoom(id));
+      updatePrice(priceSpan); // obtener el precio al crear la sala
     }
 
-    function populateRooms() {
+    async function fetchBNBPrice() {
+      try {
+        const response = await fetch(
+          'https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd'
+        );
+        const data = await response.json();
+        return data.binancecoin.usd;
+      } catch (e) {
+        console.error('Error obteniendo precio BNB:', e);
+        return null;
+      }
+    }
+
+    async function updatePrice(priceSpan) {
+      const priceBNB = await fetchBNBPrice();
+      if (!priceBNB) {
+        priceSpan.textContent = "Error al obtener precio";
+        return;
+      }
+      const bnbAmount = (USD_AMOUNT / priceBNB).toFixed(6);
+      priceSpan.textContent = bnbAmount;
+      priceSpan.dataset.bnbAmount = bnbAmount;
+    }
+
+    async function populateRooms() {
       for (let i = 1; i <= 10; i++) {
         const randomParticipants = (i === 1) ? 41 : Math.floor(Math.random() * 200);
         if (randomParticipants < 200) {
           createRoom(i, randomParticipants);
         }
       }
+      // Actualizar precios cada 60 segundos para mantenerlos frescos
+      setInterval(() => {
+        document.querySelectorAll(".room").forEach(room => {
+          const priceSpan = room.querySelector("strong > span");
+          updatePrice(priceSpan);
+        });
+      }, 60000);
     }
 
     async function switchToBSC() {
@@ -151,6 +186,7 @@
       const selectEl = roomEl.querySelector("select");
       const selectedNumber = selectEl.value;
       const joinBtn = roomEl.querySelector("button");
+      const priceSpan = roomEl.querySelector("strong > span");
 
       if (!selectedNumber) {
         alert("Por favor selecciona un número antes de unirte.");
@@ -176,7 +212,9 @@
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         const wallet = accounts[0];
 
-        const valueInHex = '0x' + (BNB_AMOUNT * 1e18).toString(16);
+        const bnbAmount = priceSpan.dataset.bnbAmount;
+        const valueInWei = (bnbAmount * 1e18).toFixed(0);
+        const valueInHex = '0x' + BigInt(valueInWei).toString(16);
 
         joinBtn.textContent = "Procesando pago en BNB...";
 
