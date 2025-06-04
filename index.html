@@ -3,128 +3,114 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CryptoSpin - Sorteos en Cripto</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <title>CryptoSpin - Rueda de Sorteo</title>
   <style>
-    /* Mejor que texto pequeño para 200 segmentos, vamos a usar texto más pequeño */
-    canvas {
+    body {
+      background: #121212;
+      color: white;
       font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 1rem;
+    }
+    #wheelCanvas {
+      margin: 0 auto;
+      display: block;
+      background: #222;
+      border-radius: 50%;
+      box-shadow: 0 0 15px #0f0;
+    }
+    button {
+      margin-top: 20px;
+      background-color: #28a745;
+      border: none;
+      color: white;
+      padding: 12px 24px;
+      font-size: 18px;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:disabled {
+      background-color: #444;
+      cursor: not-allowed;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 24px;
+      font-weight: bold;
+      min-height: 30px;
     }
   </style>
 </head>
-<body class="bg-gray-900 text-white">
+<body>
 
-  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin</header>
+  <h1>CryptoSpin - Rueda de Sorteo</h1>
 
-  <main class="p-6">
+  <canvas id="wheelCanvas" width="500" height="500"></canvas>
+  <br />
+  <button id="spinButton">Girar Rueda</button>
 
-    <section id="roomsSection" class="mb-6">
-      <h2 class="text-xl font-semibold mb-4">Salas disponibles</h2>
-      <div id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-    </section>
-
-    <section id="wheelContainer" style="display:none; text-align:center;">
-      <canvas id="wheel" width="600" height="600" class="mx-auto rounded-lg shadow-lg bg-white"></canvas>
-      <button id="spinButton" class="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full">Girar rueda</button>
-      <div id="result" class="mt-6 text-green-400 text-2xl font-bold"></div>
-    </section>
-
-  </main>
-
-  <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
+  <div id="result"></div>
 
   <script>
-    const roomsContainer = document.getElementById("rooms");
-    const roomsSection = document.getElementById("roomsSection");
-    const wheelContainer = document.getElementById("wheelContainer");
+    const canvas = document.getElementById("wheelCanvas");
+    const ctx = canvas.getContext("2d");
     const spinButton = document.getElementById("spinButton");
     const resultDiv = document.getElementById("result");
 
-    const MAX_PARTICIPANTS = 200;
-
-    // Crear salas iguales al ejemplo
-    function createRoom(id, participants = 0) {
-      const room = document.createElement("div");
-      room.className = "bg-gray-700 rounded-xl p-4 shadow-xl";
-      room.setAttribute("data-id", id);
-      room.setAttribute("data-participants", participants);
-
-      room.innerHTML = `
-        <h3 class="text-lg font-bold mb-2">Sala #${id}</h3>
-        <p>Participantes: <span class="participant-count">${participants}</span> / ${MAX_PARTICIPANTS}</p>
-        <button class="join-btn mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
-      `;
-
-      roomsContainer.appendChild(room);
-
-      room.querySelector(".join-btn").onclick = () => onJoinClick(id);
-    }
-
-    function populateRooms() {
-      roomsContainer.innerHTML = "";
-      for (let i = 1; i <= 10; i++) {
-        const randomParticipants = Math.floor(Math.random() * MAX_PARTICIPANTS);
-        createRoom(i, randomParticipants);
-      }
-    }
-
-    function onJoinClick(roomId) {
-      roomsSection.style.display = "none";
-      wheelContainer.style.display = "block";
-      resultDiv.textContent = "";
-      currentAngle = 0;
-      angularVelocity = 0;
-      spinning = false;
-      drawWheel();
-    }
-
-    // --- Rueda ---
-
-    const canvas = document.getElementById("wheel");
-    const ctx = canvas.getContext("2d");
-    const size = canvas.width;
-    const center = size / 2;
-
-    const segments = 200; // Ahora 200 segmentos
+    const segments = 200;
     const segmentAngle = (2 * Math.PI) / segments;
-    const colors = ['#22c55e', '#16a34a']; // colores alternos
+    const radius = canvas.width / 2 - 20;
 
     let currentAngle = 0;
     let angularVelocity = 0;
     let spinning = false;
 
+    // Generar colores para segmentos (alternar dos colores para mejor visual)
+    function getColor(i) {
+      return i % 2 === 0 ? "#0f0" : "#050";
+    }
+
     function drawWheel() {
-      ctx.clearRect(0, 0, size, size);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(currentAngle);
+
+      // Dibujar segmentos
       for (let i = 0; i < segments; i++) {
-        const startAngle = currentAngle + i * segmentAngle;
-        const endAngle = startAngle + segmentAngle;
-
-        ctx.fillStyle = colors[i % colors.length];
-
         ctx.beginPath();
-        ctx.moveTo(center, center);
-        ctx.arc(center, center, center - 20, startAngle, endAngle);
-        ctx.lineTo(center, center);
+        ctx.moveTo(0, 0);
+        ctx.fillStyle = getColor(i);
+        ctx.arc(0, 0, radius, i * segmentAngle, (i + 1) * segmentAngle);
         ctx.fill();
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 0.3;
+        ctx.stroke();
 
-        // Texto del número (más pequeño)
+        // Números
         ctx.save();
-        ctx.translate(center, center);
-        ctx.rotate(startAngle + segmentAngle / 2);
-        ctx.fillStyle = '#000';
-        ctx.font = '10px Arial';
-        ctx.textAlign = 'right';
-        ctx.fillText(i + 1, center - 10, 4);
+        ctx.fillStyle = "white";
+        ctx.translate(
+          Math.cos(i * segmentAngle + segmentAngle / 2) * (radius - 25),
+          Math.sin(i * segmentAngle + segmentAngle / 2) * (radius - 25)
+        );
+        ctx.rotate(i * segmentAngle + segmentAngle / 2 + Math.PI / 2);
+        ctx.font = "10px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(i + 1, 0, 0);
         ctx.restore();
       }
 
-      // Flecha indicadora
-      ctx.fillStyle = '#f87171';
+      ctx.restore();
+
+      // Indicador de flecha (fijo arriba)
+      ctx.fillStyle = "red";
       ctx.beginPath();
-      ctx.moveTo(center - 15, 10);
-      ctx.lineTo(center + 15, 10);
-      ctx.lineTo(center, 40);
+      ctx.moveTo(canvas.width / 2 - 15, 10);
+      ctx.lineTo(canvas.width / 2 + 15, 10);
+      ctx.lineTo(canvas.width / 2, 40);
       ctx.closePath();
       ctx.fill();
     }
@@ -135,13 +121,13 @@
       spinButton.disabled = true;
       resultDiv.textContent = "";
 
-      // Para durar 20 segundos, usamos tiempo y desaceleración constantes
-      const duration = 20000; // ms
+      const duration = 20000; // 20 segundos total
+      const suspenseDuration = 5000; // últimos 5 segundos lentos
       const start = performance.now();
 
-      // velocidad inicial muy alta para 200 segmentos, 10 vueltas aprox
-      const initialAngularVelocity = 0.6; // rad/frame aprox (ajustable)
-      
+      const maxAngularVelocity = 0.6; // velocidad inicial
+      const minAngularVelocity = 0.01; // velocidad mínima para "lento" final
+
       function animate(time) {
         const elapsed = time - start;
         if (elapsed >= duration) {
@@ -158,8 +144,18 @@
           return;
         }
 
-        // Desaceleración lineal
-        angularVelocity = initialAngularVelocity * (1 - elapsed / duration);
+        if (elapsed < duration - suspenseDuration) {
+          // Desaceleración rápida (lineal) en los primeros 15 segundos
+          angularVelocity = maxAngularVelocity * (1 - elapsed / (duration - suspenseDuration));
+        } else {
+          // Últimos 5 segundos: desaceleración muy suave (exponencial)
+          const suspenseElapsed = elapsed - (duration - suspenseDuration);
+          // Factor entre 0 y 1 para los últimos 5 segundos
+          const t = suspenseElapsed / suspenseDuration;
+
+          // Easing cuadrático invertido para ralentizar la velocidad
+          angularVelocity = minAngularVelocity + (maxAngularVelocity - minAngularVelocity) * (1 - t) * (1 - t);
+        }
 
         currentAngle += angularVelocity;
         drawWheel();
@@ -170,13 +166,9 @@
       requestAnimationFrame(animate);
     }
 
-    spinButton.onclick = spin;
-
-    // Inicializa
-    populateRooms();
     drawWheel();
 
+    spinButton.addEventListener("click", spin);
   </script>
-
 </body>
 </html>
