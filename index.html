@@ -1,90 +1,284 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CryptoSpin - Sorteos en Cripto</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ruleta estilo Wheel of Names 🎡</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #1e1e1e;
+    color: white;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column; align-items: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+  header {
+    padding: 15px 10px;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-align: center;
+    width: 100%;
+    background: #282828;
+    user-select: none;
+  }
+  #container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+    gap: 20px;
+    max-width: 1000px;
+    flex-grow: 1;
+    box-sizing: border-box;
+  }
+  #editor {
+    flex: 1 1 300px;
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+  }
+  #namesInput {
+    flex-grow: 1;
+    resize: none;
+    font-size: 1.1rem;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background: #2e2e2e;
+    color: white;
+    font-family: monospace;
+    box-sizing: border-box;
+  }
+  #btnClear {
+    margin-top: 10px;
+    background: #f44336;
+    border: none;
+    color: white;
+    font-weight: 700;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  #btnClear:hover {
+    background: #d32f2f;
+  }
+  #wheelContainer {
+    flex: 1 1 500px;
+    min-width: 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  #canvas {
+    border-radius: 50%;
+    background: #222;
+    box-shadow: 0 0 15px #0008 inset;
+  }
+  #spinButton {
+    margin-top: 20px;
+    font-size: 1.5rem;
+    padding: 15px 40px;
+    background: #4caf50;
+    border: none;
+    color: white;
+    font-weight: 700;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s;
+  }
+  #spinButton:disabled {
+    background: #777;
+    cursor: not-allowed;
+  }
+  #spinButton:hover:not(:disabled) {
+    background: #43a047;
+  }
+  /* Pointer */
+  #pointer {
+    width: 0; 
+    height: 0; 
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-bottom: 30px solid #4caf50;
+    margin-top: 15px;
+    filter: drop-shadow(0 0 4px #4caf50);
+  }
+</style>
 </head>
-<body class="bg-gray-900 text-white">
-  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin</header>
+<body>
 
-  <main class="p-6">
-    <section class="mb-6">
-      <h2 class="text-xl font-semibold mb-2">Bienvenido a CryptoSpin</h2>
-      <p>Participa en salas de sorteo automáticas y gana premios en criptomonedas.</p>
-    </section>
+<header>Ruleta estilo Wheel of Names</header>
 
-    <!-- Buscador de salas -->
-    <div class="mb-6">
-      <input type="text" id="searchInput" placeholder="Buscar sala por número..." class="w-full p-2 rounded text-black" />
-    </div>
+<div id="container">
 
-    <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- Aquí se insertarán las salas dinámicamente -->
-    </section>
-  </main>
+  <div id="editor">
+    <label for="namesInput" style="margin-bottom: 8px; font-weight:600;">Lista de Nombres (uno por línea):</label>
+    <textarea id="namesInput" placeholder="Escribe aquí los nombres..."></textarea>
+    <button id="btnClear">Borrar Lista</button>
+  </div>
 
-  <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
+  <div id="wheelContainer">
+    <canvas id="canvas" width="450" height="450"></canvas>
+    <div id="pointer"></div>
+    <button id="spinButton">Girar 🎲</button>
+  </div>
 
-  <script>
-    const roomsContainer = document.getElementById("rooms");
-    const searchInput = document.getElementById("searchInput");
+</div>
 
-    const roomsData = [];
+<script>
+(() => {
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const spinBtn = document.getElementById('spinButton');
+  const namesInput = document.getElementById('namesInput');
+  const btnClear = document.getElementById('btnClear');
+  const center = canvas.width / 2;
+  const radius = center - 20;
 
-    function createRoom(id, participants = 0) {
-      const room = document.createElement("div");
-      room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
-      room.setAttribute("data-id", id);
-      room.setAttribute("data-participants", participants);
+  let names = [];
+  let colors = [];
+  let startAngle = 0;
+  let arc = 0;
+  let spinning = false;
+  let spinAngleStart = 0;
+  let spinTime = 0;
+  let spinTimeTotal = 0;
 
-      room.innerHTML = `
-        <h3 class="text-lg font-bold mb-2">Sala #${id}</h3>
-        <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
-        <button onclick="joinRoom(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
-        <iframe
-          src="https://wheelofnames.com/abc-123"
-          width="400"
-          height="400"
-          style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
-          ></iframe>
-      `;
+  // Colores base para segmentos
+  const baseColors = [
+    "#e74c3c", "#8e44ad", "#3498db", "#16a085", 
+    "#f39c12", "#d35400", "#2ecc71", "#34495e"
+  ];
 
-      roomsContainer.appendChild(room);
-      roomsData.push({ id, participants });
+  // Función para guardar lista en localStorage
+  function saveNames() {
+    localStorage.setItem('wheelNames', namesInput.value.trim());
+  }
+
+  // Función para cargar lista de localStorage
+  function loadNames() {
+    const saved = localStorage.getItem('wheelNames');
+    if (saved) {
+      namesInput.value = saved;
+      updateNames();
     }
+  }
 
-    function populateRooms() {
-      for (let i = 1; i <= 10; i++) {
-        const randomParticipants = Math.floor(Math.random() * 200);
-        if (randomParticipants < 200) {
-          createRoom(i, randomParticipants);
-        }
-      }
+  // Actualizar lista de nombres y colores
+  function updateNames() {
+    const rawNames = namesInput.value.split('\n').map(n => n.trim()).filter(n => n);
+    names = rawNames.length ? rawNames : ['Sin Nombres'];
+    arc = 2 * Math.PI / names.length;
+    generateColors();
+    saveNames();
+    drawWheel();
+  }
+
+  // Generar colores para segmentos (repitiendo si hace falta)
+  function generateColors() {
+    colors = [];
+    for (let i = 0; i < names.length; i++) {
+      colors.push(baseColors[i % baseColors.length]);
     }
+  }
 
-    function joinRoom(id) {
-      const sortedRooms = [...roomsData].filter(r => r.participants < 200).sort((a, b) => b.participants - a.participants);
-      const target = sortedRooms[0];
+  // Dibujar la ruleta
+  function drawWheel() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#222';
 
-      if (target) {
-        alert(`Te has unido a la Sala #${target.id}`);
-        const roomEl = document.querySelector(`.room[data-id='${target.id}'] .participant-count`);
-        let newCount = parseInt(roomEl.textContent) + 1;
-        roomEl.textContent = newCount;
-      }
+    for (let i = 0; i < names.length; i++) {
+      const angle = startAngle + i * arc;
+      // segmento
+      ctx.beginPath();
+      ctx.fillStyle = colors[i];
+      ctx.moveTo(center, center);
+      ctx.arc(center, center, radius, angle, angle + arc);
+      ctx.lineTo(center, center);
+      ctx.fill();
+      ctx.stroke();
+
+      // texto
+      ctx.save();
+      ctx.fillStyle = '#fff';
+      ctx.translate(center, center);
+      ctx.rotate(angle + arc / 2);
+      ctx.textAlign = "right";
+      ctx.font = "bold 16px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+      ctx.fillText(names[i], radius - 10, 10);
+      ctx.restore();
     }
+  }
 
-    searchInput.addEventListener("input", (e) => {
-      const value = e.target.value.toLowerCase();
-      document.querySelectorAll(".room").forEach(room => {
-        const roomId = room.getAttribute("data-id");
-        room.style.display = roomId.includes(value) ? "block" : "none";
-      });
-    });
+  // Easing para desacelerar giro
+  function easeOut(t, b, c, d) {
+    const ts = (t /= d) * t;
+    const tc = ts * t;
+    return b + c * (tc + -3 * ts + 3 * t);
+  }
 
-    populateRooms();
-  </script>
+  // Animar giro
+  function rotateWheel() {
+    spinTime += 30;
+    if (spinTime >= spinTimeTotal) {
+      stopRotateWheel();
+      return;
+    }
+    const spinAngle = spinAngleStart - easeOut(spinTime, 0, spinAngleStart, spinTimeTotal);
+    startAngle += spinAngle * Math.PI / 180;
+    drawWheel();
+    setTimeout(rotateWheel, 30);
+  }
+
+  // Al terminar el giro, mostrar ganador
+  function stopRotateWheel() {
+    spinning = false;
+    spinBtn.disabled = false;
+    // Calcular segmento ganador
+    const degrees = startAngle * 180 / Math.PI + 90;
+    const arcd = arc * 180 / Math.PI;
+    const index = Math.floor((360 - (degrees % 360)) / arcd);
+    alert(`🎉 ¡Ganó: ${names[index]}! 🎉`);
+  }
+
+  // Función para iniciar giro
+  function startSpin() {
+    if (spinning) return;
+    spinning = true;
+    spinBtn.disabled = true;
+    spinAngleStart = Math.floor(Math.random() * 360) + 360 * 5;
+    spinTime = 0;
+    spinTimeTotal = Math.floor(Math.random() * 3000) + 4000;
+    rotateWheel();
+  }
+
+  // Evento textarea cambio
+  namesInput.addEventListener('input', updateNames);
+
+  // Evento limpiar lista
+  btnClear.addEventListener('click', () => {
+    namesInput.value = '';
+    updateNames();
+  });
+
+  // Evento botón girar
+  spinBtn.addEventListener('click', startSpin);
+
+  // Cargar lista guardada al inicio
+  loadNames();
+
+  // Dibuja la ruleta al inicio aunque lista esté vacía
+  drawWheel();
+
+})();
+</script>
+
 </body>
 </html>
