@@ -41,9 +41,9 @@
       room.innerHTML = `
         <h3 class="text-lg font-bold mb-2">Sala #${id}</h3>
         <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
-        <button onclick="joinRoom(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
+        <button onclick="connectWallet(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
         <iframe
-          src="https://wheelofnames.com/abc-123"
+          src="https://wheelofnames.com/es/rub-pk9"
           width="400"
           height="400"
           style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
@@ -63,26 +63,21 @@
       }
     }
 
-    async function joinRoom(id) {
-      if (typeof window.ethereum === 'undefined') {
-        alert('MetaMask no está disponible. Instala MetaMask para continuar.');
-        return;
-      }
-
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const walletAddress = accounts[0];
-
-        alert(`Wallet conectada: ${walletAddress}\nTe has unido a la Sala #${id}`);
-
-        const roomEl = document.querySelector(`.room[data-id='${id}'] .participant-count`);
-        let newCount = parseInt(roomEl.textContent) + 1;
-        roomEl.textContent = newCount;
-
-        // Aquí puedes añadir lógica para enviar la dirección al backend o smart contract
-      } catch (error) {
-        console.error(error);
-        alert('Conexión a la wallet cancelada o fallida.');
+    function connectWallet(roomId) {
+      if (typeof window.ethereum !== 'undefined') {
+        window.ethereum.request({ method: 'eth_requestAccounts' })
+          .then(accounts => {
+            const wallet = accounts[0];
+            alert(`Wallet conectada: ${wallet}\n¡Te has unido a la Sala #${roomId}!`);
+            const roomEl = document.querySelector(`.room[data-id='${roomId}'] .participant-count`);
+            let newCount = parseInt(roomEl.textContent) + 1;
+            roomEl.textContent = newCount;
+          })
+          .catch(err => {
+            alert('Error al conectar wallet: ' + err.message);
+          });
+      } else {
+        alert('Por favor instala MetaMask para unirte.');
       }
     }
 
