@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CryptoSpin - Sorteos en Cripto</title>
+  <title>CryptoSpin - Solo BNB</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   <style>
-    /* Bloquear interacción con el iframe para que nadie pueda girar manualmente */
     iframe {
       pointer-events: none;
       border-radius: 12px;
@@ -16,32 +15,25 @@
   </style>
 </head>
 <body class="bg-gray-900 text-white">
-  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin</header>
+  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin - Solo BNB</header>
 
   <main class="p-6">
     <section class="mb-6">
-      <h2 class="text-xl font-semibold mb-2">Bienvenido a CryptoSpin</h2>
-      <p>Participa en salas de sorteo automáticas y gana premios en criptomonedas.</p>
+      <h2 class="text-xl font-semibold mb-2">Participa y paga solo en BNB</h2>
+      <p>Selecciona un número y paga $0.50 en BNB para unirte.</p>
     </section>
 
-    <!-- Buscador de salas -->
-    <div class="mb-6">
-      <input type="text" id="searchInput" placeholder="Buscar sala por número..." class="w-full p-2 rounded text-black" />
-    </div>
-
-    <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- Salas dinámicas -->
-    </section>
+    <div id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
   </main>
 
   <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
 
   <script>
     const roomsContainer = document.getElementById("rooms");
-    const searchInput = document.getElementById("searchInput");
-    const roomsData = [];
-
     const YOUR_WALLET = "0x659a0f0D27378c9f25B97B0fE0F0df6fD1a6D3d4";
+
+    // Config de BSC Mainnet
+    const BSC_CHAIN_ID = '0x38'; // 56 decimal
 
     const extraInfoHTML = `
       <div class="ml-4 text-sm space-y-1 max-w-xs">
@@ -65,7 +57,6 @@
       const selectId = `numberSelect-${id}`;
       const buttonId = `joinBtn-${id}`;
 
-      // Opciones de números del 1 al 200
       const availableNumbers = Array.from({ length: 200 }, (_, i) => i + 1);
 
       room.innerHTML = `
@@ -92,7 +83,6 @@
       `;
 
       roomsContainer.appendChild(room);
-      roomsData.push({ id, participants, iframeId, selectId, buttonId });
 
       const selectEl = document.getElementById(selectId);
       const joinBtn = document.getElementById(buttonId);
@@ -119,81 +109,114 @@
       }
     }
 
+    async function switchToBSC() {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: BSC_CHAIN_ID }],
+        });
+        return true;
+      } catch (switchError) {
+        // Si la red no está agregada, la agrega
+        if (switchError.code === 4902) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: BSC_CHAIN_ID,
+                chainName: 'Binance Smart Chain Mainnet',
+                nativeCurrency: {
+                  name: 'Binance Coin',
+                  symbol: 'BNB',
+                  decimals: 18
+                },
+                rpcUrls: ['https://bsc-dataseed.binance.org/'],
+                blockExplorerUrls: ['https://bscscan.com']
+              }]
+            });
+            return true;
+          } catch (addError) {
+            alert('Error agregando la red BSC: ' + addError.message);
+            return false;
+          }
+        } else {
+          alert('Error cambiando a la red BSC: ' + switchError.message);
+          return false;
+        }
+      }
+    }
+
     async function joinRoom(roomId) {
-      const room = roomsData.find(r => r.id === roomId);
       const roomEl = document.querySelector(`.room[data-id='${roomId}']`);
       const countEl = roomEl.querySelector(".participant-count");
-      const selectEl = document.getElementById(room.selectId);
+      const selectEl = roomEl.querySelector("select");
       const selectedNumber = selectEl.value;
-      const joinBtn = document.getElementById(room.buttonId);
+      const joinBtn = roomEl.querySelector("button");
 
       if (!selectedNumber) {
         alert("Por favor selecciona un número antes de unirte.");
         return;
       }
 
-      if (typeof window.ethereum !== 'undefined') {
-        try {
-          // Pedir permiso para conectar wallet
-          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-          const wallet = accounts[0];
-
-          // Valor fijo para pagar 0.0005 BNB aprox (ajustar si quieres otro valor)
-          const valueInHex = '0x1c6bf52634000';
-
-          joinBtn.disabled = true;
-          joinBtn.textContent = "Procesando pago...";
-
-          const txHash = await window.ethereum.request({
-            method: 'eth_sendTransaction',
-            params: [{
-              from: wallet,
-              to: YOUR_WALLET,
-              value: valueInHex
-            }]
-          });
-
-          alert(`Wallet conectada: ${wallet}\nNúmero seleccionado: ${selectedNumber}\nPago enviado!\nTx: ${txHash}\n¡Te has unido a la Sala #${roomId}!`);
-
-          let newCount = parseInt(countEl.textContent) + 1;
-          countEl.textContent = newCount;
-          room.participants = newCount;
-
-          // Deshabilitar opción seleccionada para que no se repita (opcional)
-          selectEl.querySelector(`option[value="${selectedNumber}"]`).disabled = true;
-          selectEl.value = "";
-          joinBtn.disabled = true;
-          joinBtn.classList.add("opacity-50", "cursor-not-allowed");
-          joinBtn.textContent = "Unirse por $0.50";
-
-          // Cuando sala llena, girar rueda automáticamente
-          if (newCount >= 200) {
-            alert("¡La sala está llena! Girando la ruleta automáticamente...");
-            const iframe = document.getElementById(room.iframeId);
-            iframe.contentWindow.postMessage({ action: 'spin' }, '*');
-          }
-
-        } catch (err) {
-          alert('Error al enviar pago o conectar wallet: ' + err.message);
-          joinBtn.disabled = false;
-          joinBtn.textContent = "Unirse por $0.50";
-        }
-      } else {
+      if (!window.ethereum) {
         alert("Por favor instala MetaMask u otra wallet compatible con Binance Smart Chain para pagar.");
+        return;
+      }
+
+      joinBtn.disabled = true;
+      joinBtn.textContent = "Validando red BNB...";
+
+      const isSwitched = await switchToBSC();
+      if (!isSwitched) {
+        joinBtn.disabled = false;
+        joinBtn.textContent = "Unirse por $0.50";
+        return;
+      }
+
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const wallet = accounts[0];
+
+        // Precio fijo en BNB para $0.50 (aprox 0.0005 BNB)
+        // Nota: Ajusta según precio real si quieres más precisión
+        const valueInBNB = 0.0005;
+        const valueInHex = '0x' + (valueInBNB * 1e18).toString(16);
+
+        joinBtn.textContent = "Procesando pago en BNB...";
+
+        const txHash = await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: wallet,
+            to: YOUR_WALLET,
+            value: valueInHex,
+          }]
+        });
+
+        alert(`Pago recibido en BNB!\nNúmero seleccionado: ${selectedNumber}\nTx: ${txHash}\n¡Te has unido a la Sala #${roomId}!`);
+
+        // Actualizar participantes
+        let newCount = parseInt(countEl.textContent) + 1;
+        countEl.textContent = newCount;
+
+        // Deshabilitar opción seleccionada para que no se repita (opcional)
+        selectEl.querySelector(`option[value="${selectedNumber}"]`).disabled = true;
+        selectEl.value = "";
+        joinBtn.disabled = true;
+        joinBtn.classList.add("opacity-50", "cursor-not-allowed");
+        joinBtn.textContent = "Unirse por $0.50";
+
+        if (newCount >= 200) {
+          alert("¡La sala está llena! Girando la ruleta automáticamente...");
+          const iframe = roomEl.querySelector("iframe");
+          iframe.contentWindow.postMessage({ action: 'spin' }, '*');
+        }
+      } catch (err) {
+        alert("Error en la transacción: " + err.message);
+        joinBtn.disabled = false;
+        joinBtn.textContent = "Unirse por $0.50";
       }
     }
-
-    searchInput.addEventListener("input", () => {
-      const term = searchInput.value.trim();
-      document.querySelectorAll(".room").forEach(room => {
-        const id = room.getAttribute("data-id");
-        if (id.includes(term)) {
-          room.style.display = "";
-        } else {
-          room.style.display = "none";
-        }
-      });
-    });
 
     populateRooms();
   </script>
