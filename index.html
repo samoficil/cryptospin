@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CryptoSpin - Sorteos en Cripto</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <style>
+    /* Mejor que texto pequeño para 200 segmentos, vamos a usar texto más pequeño */
+    canvas {
+      font-family: Arial, sans-serif;
+    }
+  </style>
 </head>
 <body class="bg-gray-900 text-white">
 
@@ -12,15 +18,13 @@
 
   <main class="p-6">
 
-    <!-- Sección Salas -->
     <section id="roomsSection" class="mb-6">
       <h2 class="text-xl font-semibold mb-4">Salas disponibles</h2>
       <div id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </section>
 
-    <!-- Sección Rueda (oculta inicialmente) -->
     <section id="wheelContainer" style="display:none; text-align:center;">
-      <canvas id="wheel" width="500" height="500" class="mx-auto rounded-lg shadow-lg bg-white"></canvas>
+      <canvas id="wheel" width="600" height="600" class="mx-auto rounded-lg shadow-lg bg-white"></canvas>
       <button id="spinButton" class="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full">Girar rueda</button>
       <div id="result" class="mt-6 text-green-400 text-2xl font-bold"></div>
     </section>
@@ -30,18 +34,15 @@
   <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
 
   <script>
-    // Referencias DOM
     const roomsContainer = document.getElementById("rooms");
     const roomsSection = document.getElementById("roomsSection");
     const wheelContainer = document.getElementById("wheelContainer");
     const spinButton = document.getElementById("spinButton");
     const resultDiv = document.getElementById("result");
 
-    // Datos salas (puedes cambiar aquí)
-    const roomsData = [];
     const MAX_PARTICIPANTS = 200;
 
-    // Crear sala en DOM
+    // Crear salas iguales al ejemplo
     function createRoom(id, participants = 0) {
       const room = document.createElement("div");
       room.className = "bg-gray-700 rounded-xl p-4 shadow-xl";
@@ -55,39 +56,36 @@
       `;
 
       roomsContainer.appendChild(room);
-      roomsData.push({ id, participants });
 
-      // Evento botón Unirse
       room.querySelector(".join-btn").onclick = () => onJoinClick(id);
     }
 
-    // Crear 10 salas con participantes aleatorios
     function populateRooms() {
       roomsContainer.innerHTML = "";
-      roomsData.length = 0;
       for (let i = 1; i <= 10; i++) {
         const randomParticipants = Math.floor(Math.random() * MAX_PARTICIPANTS);
         createRoom(i, randomParticipants);
       }
     }
 
-    // Mostrar/Ocultar secciones al unirse
     function onJoinClick(roomId) {
       roomsSection.style.display = "none";
       wheelContainer.style.display = "block";
       resultDiv.textContent = "";
       currentAngle = 0;
+      angularVelocity = 0;
+      spinning = false;
       drawWheel();
     }
 
-    // --- Rueda de la suerte ---
+    // --- Rueda ---
 
     const canvas = document.getElementById("wheel");
     const ctx = canvas.getContext("2d");
     const size = canvas.width;
     const center = size / 2;
 
-    const segments = 10; // Número de segmentos
+    const segments = 200; // Ahora 200 segmentos
     const segmentAngle = (2 * Math.PI) / segments;
     const colors = ['#22c55e', '#16a34a']; // colores alternos
 
@@ -97,11 +95,11 @@
 
     function drawWheel() {
       ctx.clearRect(0, 0, size, size);
+
       for (let i = 0; i < segments; i++) {
         const startAngle = currentAngle + i * segmentAngle;
         const endAngle = startAngle + segmentAngle;
 
-        // Color segmento
         ctx.fillStyle = colors[i % colors.length];
 
         ctx.beginPath();
@@ -110,19 +108,19 @@
         ctx.lineTo(center, center);
         ctx.fill();
 
-        // Texto número segmento
+        // Texto del número (más pequeño)
         ctx.save();
         ctx.translate(center, center);
         ctx.rotate(startAngle + segmentAngle / 2);
         ctx.fillStyle = '#000';
-        ctx.font = '24px Arial';
+        ctx.font = '10px Arial';
         ctx.textAlign = 'right';
-        ctx.fillText(i + 1, center - 40, 10);
+        ctx.fillText(i + 1, center - 10, 4);
         ctx.restore();
       }
 
-      // Dibuja flecha indicadora arriba
-      ctx.fillStyle = '#f87171'; // rojo claro
+      // Flecha indicadora
+      ctx.fillStyle = '#f87171';
       ctx.beginPath();
       ctx.moveTo(center - 15, 10);
       ctx.lineTo(center + 15, 10);
@@ -134,10 +132,19 @@
     function spin() {
       if (spinning) return;
       spinning = true;
-      angularVelocity = Math.random() * 0.3 + 0.3; // velocidad inicial aleatoria
+      spinButton.disabled = true;
+      resultDiv.textContent = "";
 
-      function animate() {
-        if (angularVelocity <= 0.002) {
+      // Para durar 20 segundos, usamos tiempo y desaceleración constantes
+      const duration = 20000; // ms
+      const start = performance.now();
+
+      // velocidad inicial muy alta para 200 segmentos, 10 vueltas aprox
+      const initialAngularVelocity = 0.6; // rad/frame aprox (ajustable)
+      
+      function animate(time) {
+        const elapsed = time - start;
+        if (elapsed >= duration) {
           spinning = false;
           angularVelocity = 0;
 
@@ -150,18 +157,22 @@
           spinButton.disabled = false;
           return;
         }
+
+        // Desaceleración lineal
+        angularVelocity = initialAngularVelocity * (1 - elapsed / duration);
+
         currentAngle += angularVelocity;
-        angularVelocity *= 0.97; // desacelerar poco a poco
         drawWheel();
+
         requestAnimationFrame(animate);
       }
-      spinButton.disabled = true;
-      animate();
+
+      requestAnimationFrame(animate);
     }
 
     spinButton.onclick = spin;
 
-    // Inicializar salas y rueda
+    // Inicializa
     populateRooms();
     drawWheel();
 
