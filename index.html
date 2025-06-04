@@ -1,107 +1,85 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CryptoSpin - Sorteos en Cripto</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-</head>
-<body class="bg-gray-900 text-white">
-  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">
-    CryptoSpin
-  </header>
+<!-- Agrega estas líneas en la etiqueta <head> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
 
-  <main class="p-6">
-    <section class="mb-6">
-      <h2 class="text-xl font-semibold mb-2">Bienvenido a CryptoSpin</h2>
-      <p>Participa en salas de sorteo automáticas y gana premios en criptomonedas.</p>
-    </section>
+<!-- Agrega esta sección antes de la etiqueta </body> para incluir el modal de conexión de la billetera y la rueda -->
+<div id="modal" class="hidden w-full h-full top-0 left-0 fixed flex items-center justify-center bg-gray-900/50">
+  <div class="bg-white rounded-xl p-8 text-black">
+    <h2 class="text-xl font-semibold">Conecta tu billetera</h2>
+    <button id="connectButton" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full">Conectar</button>
+  </div>
+</div>
 
-    <!-- Buscador de salas -->
-    <div class="mb-6">
-      <input
-        type="text"
-        id="searchInput"
-        placeholder="Buscar sala por número..."
-        class="w-full p-2 rounded text-black"
-      />
-    </div>
+<!-- Contenedor de la rueda -->
+<div id="wheel-of-fortune" class="hidden fixed h-screen w-screen top-0 left-0" style="background-color: rgba(0,0,0,0.7)"></div>
 
-    <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- Aquí se insertarán las salas dinámicamente -->
-    </section>
-  </main>
+<script>
+// Agrega estas líneas para incluir datos deChart.js en el script
+let wheelCanvasContext = null;
 
-  <footer class="p-4 bg-gray-800 text-center">
-    &copy; 2025 CryptoSpin. Todos los derechos reservados.
-  </footer>
+window.onload = () => {
+  wheelOfFortuneInit();
+}
 
-  <script>
-    const roomsContainer = document.getElementById("rooms");
-    const searchInput = document.getElementById("searchInput");
+function wheelOfFortuneInit() {
+  const canvas = document.getElementById("wheel-of-fortune");
+  wheelCanvasContext = canvas.getContext("2d");
 
-    const roomsData = [];
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+  const radius = Math.min(centerX, centerY);
 
-    function createRoom(id, participants = 0) {
-      const room = document.createElement("div");
-      room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
-      room.setAttribute("data-id", id);
-      room.setAttribute("data-participants", participants);
+  wheelCanvasContext.beginPath();
+  wheelCanvasContext.arc(centerX, centerY, radius, 0, Math.PI * 2, false);
+  wheelCanvasContext.fillStyle = "white";
+  wheelCanvasContext.fill();
+  wheelCanvasContext.closePath();
 
-      room.innerHTML = `
-        <h3 class="text-lg font-bold mb-2">Sala #${id}</h3>
-        <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
-        <button onclick="joinRoom(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
-      `;
+  wheelCanvasContext.font = "bold 12px Arial";
+  wheelCanvasContext.textAlign = "center";
+  wheelCanvasContext.fillStyle = "black";
+  wheelCanvasContext.fillText(" Rueda de la Fortuna", centerX, centerY + 40);
+}
 
-      roomsContainer.appendChild(room);
-      roomsData.push({ id, participants });
-    }
+// Agrega estas líneas al final del script
+function showModal() {
+  document.getElementById("modal").classList.remove("hidden");
+}
 
-    function populateRooms() {
-      for (let i = 1; i <= 200; i++) {
-        const randomParticipants = Math.floor(Math.random() * 200);
-        if (randomParticipants < 200) {
-          createRoom(i, randomParticipants);
-        }
-      }
-    }
+function hideModal() {
+  document.getElementById("modal").classList.add("hidden");
+}
 
-    function joinRoom(id) {
-      // Lógica de unión a la sala más cercana a llenarse
-      const sortedRooms = [...roomsData].filter((r) => r.participants < 200).sort((a, b) => b.participants - a.participants);
-      const target = sortedRooms[0];
+document.getElementById("connectButton").addEventListener("click", () => {
+  hideModal();
+  showWheelOfFortune();
+});
 
-      if (target) {
-        alert(`Te has unido a la Sala #${target.id}`);
-        // Actualizar participante visualmente
-        const roomEl = document.querySelector(`.room[data-id='${target.id}'] .participant-count`);
-        let newCount = parseInt(roomEl.textContent) + 1;
-        roomEl.textContent = newCount;
+function showWheelOfFortune() {
+  document.getElementById("wheel-of-fortune").classList.remove("hidden");
+  // Lógica para rotar el canvas y simular la rueda de la fortuna
+  // Puedes ver un ejemplo de cómo hacerlo con Chart.js aquí: https://www.chartjs.org/docs/latest/samples/animations/rotate.html
 
-        // Actualizar data en roomsData también
-        const roomData = roomsData.find((r) => r.id === target.id);
-        if (roomData) roomData.participants = newCount;
+  // ... Tu lógica de almacenamiento de premios aquí
+}
 
-        // Si se llena la sala, ocultarla
-        if (newCount >= 200) {
-          const roomDiv = document.querySelector(`.room[data-id='${target.id}']`);
-          roomDiv.style.display = "none";
-        }
-      } else {
-        alert("No hay salas disponibles para unirse.");
-      }
-    }
+document.getElementById("joinButton").addEventListener("click", (e) => {
+  e.preventDefault();
+  showModal();
+});
 
-    searchInput.addEventListener("input", (e) => {
-      const value = e.target.value.toLowerCase();
-      document.querySelectorAll(".room").forEach((room) => {
-        const roomId = room.getAttribute("data-id");
-        room.style.display = roomId.includes(value) ? "block" : "none";
-      });
-    });
+function joinRoom(id) {
+  // Lógica de unión a la sala más cercana a llenarse
+  // …
+}
 
-    populateRooms();
-  </script>
-</body>
-</html>
+// Dentro de la función joinRoom después de: if (newCount >= 200)
+if (newCount >= 200) {
+  // …
+  setTimeout(() => {
+    document.querySelector(`.room[data-id='${target.id}'] . participants`); // Selecciona elemento de texto de participantes en la sala
+    showWheelOfFortune();
+  }, 1000);
+} else {
+  // ...
+}
+</script>
