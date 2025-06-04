@@ -43,11 +43,12 @@
         <h3 class="text-lg font-bold mb-2">Sala #${id}</h3>
         <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
         <button onclick="joinRoom(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
-        
-        <div class="wheel-container mt-4 relative w-60 h-60 mx-auto">
-          <canvas id="wheelCanvas${id}" width="240" height="240" class="rounded-full border-4 border-green-400 shadow-lg"></canvas>
-          <button onclick="spinWheel(${id})" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-full font-bold">Girar</button>
-        </div>
+        <iframe
+          src="https://wheelofnames.com/abc-123"
+          width="400"
+          height="400"
+          style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
+          ></iframe>
       `;
 
       roomsContainer.appendChild(room);
@@ -82,56 +83,6 @@
         room.style.display = roomId.includes(value) ? "block" : "none";
       });
     });
-
-    function spinWheel(id) {
-      const canvas = document.getElementById(`wheelCanvas${id}`);
-      const ctx = canvas.getContext("2d");
-      const names = ["Premio 1", "Premio 2", "Premio 3", "Sigue participando"];
-      const arc = Math.PI * 2 / names.length;
-      let angle = 0;
-      let rotation = 0;
-      let spinning = true;
-
-      function drawWheel() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (let i = 0; i < names.length; i++) {
-          const start = angle + i * arc;
-          const end = start + arc;
-          ctx.beginPath();
-          ctx.fillStyle = `hsl(${i * 360 / names.length}, 70%, 50%)`;
-          ctx.moveTo(120, 120);
-          ctx.arc(120, 120, 120, start, end);
-          ctx.fill();
-
-          ctx.save();
-          ctx.translate(120, 120);
-          ctx.rotate(start + arc / 2);
-          ctx.fillStyle = "#fff";
-          ctx.font = "14px Arial";
-          ctx.fillText(names[i], 40, 0);
-          ctx.restore();
-        }
-      }
-
-      function animate() {
-        if (!spinning) return;
-        angle += 0.05;
-        rotation += 0.05;
-        if (rotation >= Math.PI * 6) {
-          spinning = false;
-          setTimeout(() => {
-            const winner = names[Math.floor(Math.random() * names.length)];
-            alert("🎉 Resultado: " + winner + " 🎁");
-          }, 500);
-        } else {
-          drawWheel();
-          requestAnimationFrame(animate);
-        }
-      }
-
-      drawWheel();
-      animate();
-    }
 
     populateRooms();
   </script>
