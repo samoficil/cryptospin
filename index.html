@@ -39,18 +39,16 @@
     const searchInput = document.getElementById("searchInput");
     const totalNumbers = 200;
 
-    // Crear un canvas para la rueda
     function createWheel(id) {
       const canvas = document.createElement("canvas");
       canvas.width = 400;
       canvas.height = 400;
-      canvas.style.border = "2px solid #4ade80";
+      canvas.style.border = "2px solid #22c55e"; // Verde original
       canvas.style.borderRadius = "12px";
       canvas.id = `wheel-${id}`;
       return canvas;
     }
 
-    // Dibuja la rueda con números del 1 al 200
     function drawWheel(ctx, numbers, rotation) {
       const radius = 180;
       const centerX = ctx.canvas.width / 2;
@@ -63,15 +61,13 @@
       ctx.rotate(rotation);
 
       for (let i = 0; i < numbers.length; i++) {
-        // Color de la sección
-        ctx.fillStyle = i % 2 === 0 ? "#16a34a" : "#22c55e";
+        ctx.fillStyle = i % 2 === 0 ? "#22c55e" : "#16a34a"; // verde claro y oscuro original
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.arc(0, 0, radius, i * sliceAngle, (i + 1) * sliceAngle);
         ctx.closePath();
         ctx.fill();
 
-        // Texto
         ctx.save();
         ctx.fillStyle = "#000";
         ctx.translate(
@@ -87,7 +83,6 @@
 
       ctx.restore();
 
-      // Dibujar el indicador (flecha)
       ctx.fillStyle = "red";
       ctx.beginPath();
       ctx.moveTo(centerX, centerY - radius - 10);
@@ -97,15 +92,14 @@
       ctx.fill();
     }
 
-    // Animación de giro con desaceleración para suspenso
     function spinWheel(canvas) {
       const ctx = canvas.getContext("2d");
       const numbers = Array.from({ length: totalNumbers }, (_, i) => i + 1);
       let start = null;
-      let duration = 20000; // 20 segundos
+      let duration = 20000;
       let rotation = 0;
-      let angularVelocity = 0.5; // velocidad inicial
-      let easing = t => 1 - Math.pow(1 - t, 3); // desaceleración suave
+      let angularVelocity = 0.5;
+      let easing = t => 1 - Math.pow(1 - t, 3);
 
       function animate(timestamp) {
         if (!start) start = timestamp;
@@ -113,7 +107,6 @@
         let progress = Math.min(elapsed / duration, 1);
         let easedProgress = easing(progress);
 
-        // El giro total es angularVelocity * duración ajustado con easing
         rotation = angularVelocity * duration * (1 - easedProgress);
 
         drawWheel(ctx, numbers, rotation);
@@ -121,8 +114,6 @@
         if (progress < 1) {
           requestAnimationFrame(animate);
         } else {
-          // Aquí puedes detectar el número ganador basado en la rotación si quieres
-          // Por ejemplo, el índice ganador:
           let sliceAngle = (2 * Math.PI) / numbers.length;
           let normalizedRotation = rotation % (2 * Math.PI);
           let winningIndex = Math.floor((2 * Math.PI - normalizedRotation) / sliceAngle) % numbers.length;
