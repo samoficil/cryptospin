@@ -21,7 +21,7 @@
     </div>
 
     <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- Aquí se insertarán las salas dinámicamente -->
+      <!-- Salas dinámicas -->
     </section>
   </main>
 
@@ -50,14 +50,22 @@
       room.setAttribute("data-id", id);
       room.setAttribute("data-participants", participants);
 
+      const iframeId = `wheel-${id}`;
+      const availableNumbers = Array.from({ length: 200 }, (_, i) => i + 1);
+
       room.innerHTML = `
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-lg font-bold flex items-center gap-2">Sala #${id}</h3>
           ${extraInfoHTML}
         </div>
         <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
-        <button onclick="connectWallet(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
+        <label for="numberSelect-${id}" class="block mt-2 text-sm">Escoge tu número:</label>
+        <select id="numberSelect-${id}" class="w-full p-2 text-black rounded mb-2">
+          ${availableNumbers.map(n => `<option value="${n}">${n}</option>`).join("")}
+        </select>
+        <button onclick="joinRoom(${id})" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
         <iframe
+          id="${iframeId}"
           src="https://wheelofnames.com/bh2-bm6"
           width="400"
           height="400"
@@ -66,7 +74,7 @@
       `;
 
       roomsContainer.appendChild(room);
-      roomsData.push({ id, participants });
+      roomsData.push({ id, participants, iframeId });
     }
 
     function populateRooms() {
@@ -78,19 +86,42 @@
       }
     }
 
-    function connectWallet(roomId) {
+    async function joinRoom(roomId) {
+      const room = roomsData.find(r => r.id === roomId);
+      const roomEl = document.querySelector(`.room[data-id='${roomId}']`);
+      const countEl = roomEl.querySelector(".participant-count");
+      const selectEl = roomEl.querySelector(`#numberSelect-${roomId}`);
+      const selectedNumber = selectEl.value;
+
       if (typeof window.ethereum !== 'undefined') {
-        window.ethereum.request({ method: 'eth_requestAccounts' })
-          .then(accounts => {
-            const wallet = accounts[0];
-            alert(`Wallet conectada: ${wallet}\n¡Te has unido a la Sala #${roomId}!`);
-            const roomEl = document.querySelector(`.room[data-id='${roomId}'] .participant-count`);
-            let newCount = parseInt(roomEl.textContent) + 1;
-            roomEl.textContent = newCount;
-          })
-          .catch(err => {
-            alert('Error al conectar wallet: ' + err.message);
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          const wallet = accounts[0];
+
+          // Simula el pago de 0.50 USD en ETH (ajustable)
+          const tx = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{
+              from: wallet,
+              to: '0xYourWalletHere', // Reemplaza con tu dirección
+              value: '0x6f05b59d3b2000', // 0.0005 ETH aprox en hexadecimal
+            }]
           });
+
+          alert(`Wallet conectada: ${wallet}\nNúmero seleccionado: ${selectedNumber}\nTx enviada: ${tx}\n¡Te has unido a la Sala #${roomId}!`);
+
+          let newCount = parseInt(countEl.textContent) + 1;
+          countEl.textContent = newCount;
+
+          if (newCount >= 200) {
+            alert("¡La sala está llena! Girando la ruleta...");
+            const iframe = document.getElementById(room.iframeId);
+            iframe.contentWindow.postMessage({ action: 'spin' }, '*');
+          }
+
+        } catch (err) {
+          alert('Error al conectar o pagar: ' + err.message);
+        }
       } else {
         alert('Por favor instala MetaMask para unirte.');
       }
