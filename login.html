@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Iniciar sesión - CryptoSpin</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
+  <form id="loginForm" class="bg-gray-800 p-6 rounded shadow-md w-full max-w-sm space-y-4">
+    <h2 class="text-2xl font-bold text-green-400 mb-4">Iniciar sesión</h2>
+    <input type="text" id="loginInput" placeholder="Usuario o correo" class="w-full p-2 rounded bg-gray-700 text-white" required />
+    <input type="password" id="loginPassword" placeholder="Contraseña" class="w-full p-2 rounded bg-gray-700 text-white" required />
+    <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 p-2 rounded">Entrar</button>
+    <p class="text-sm mt-2">¿No tienes cuenta? <a href="register.html" class="text-blue-400 underline">Regístrate</a></p>
+    <div id="loginError" class="text-red-400 mt-2"></div>
+  </form>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const loginInput = document.getElementById("loginInput").value.trim().toLowerCase();
+      const password = document.getElementById("loginPassword").value;
+
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      const user = users.find(u => 
+        (u.username.toLowerCase() === loginInput || u.email === loginInput) && u.password === password
+      );
+
+      if (!user) {
+        document.getElementById("loginError").textContent = "❌ Credenciales incorrectas.";
+        return;
+      }
+
+      localStorage.setItem("currentUser", JSON.stringify({ username: user.username, email: user.email }));
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>
