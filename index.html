@@ -1,110 +1,93 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CryptoSpin - Sorteos en Cripto</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-</head>
-<body class="bg-gray-900 text-white">
-  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin</header>
+<!-- Lo importante comienza desde la etiqueta <script> -->
+<script>
+  const roomsContainer = document.getElementById("rooms");
+  const searchInput = document.getElementById("searchInput");
+  const roomsData = [];
 
-  <main class="p-6">
-    <section class="mb-6">
-      <h2 class="text-xl font-semibold mb-2">Bienvenido a CryptoSpin</h2>
-      <p>Participa en salas de sorteo automáticas y gana premios en criptomonedas.</p>
-    </section>
-
-    <!-- Buscador de salas -->
-    <div class="mb-6">
-      <input type="text" id="searchInput" placeholder="Buscar sala por número..." class="w-full p-2 rounded text-black" />
+  const extraInfoHTML = `
+    <div class="ml-4 text-sm space-y-1 max-w-xs">
+      <p class="font-bold text-green-400">GANA $50 CON $0,50</p>
+      <p>3 ENTRE 200 | ¡Bienvenido! al Sorteo por Participacion en donde tendrás 3 Oportunidades para ¡GANAR!</p>
+      <p class="font-semibold">>>SERÁN 3 GIROS<<</p>
+      <p>GIRO1️⃣ $10</p>
+      <p>GIRO2️⃣ $10</p>
+      <p>GIRO3️⃣ $50 🏆</p>
+      <p class="font-bold">¡QUE GANE EL MEJOR!</p>
     </div>
+  `;
 
-    <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- Aquí se insertarán las salas dinámicamente -->
-    </section>
-  </main>
+  function createRoom(id, participants = 0) {
+    const room = document.createElement("div");
+    room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
+    room.setAttribute("data-id", id);
+    room.setAttribute("data-participants", participants);
 
-  <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
-
-  <script>
-    const roomsContainer = document.getElementById("rooms");
-    const searchInput = document.getElementById("searchInput");
-    const roomsData = [];
-
-    const extraInfoHTML = `
-      <div class="ml-4 text-sm space-y-1 max-w-xs">
-        <p class="font-bold text-green-400">GANA $50 CON $0,50</p>
-        <p>3 ENTRE 200 | ¡Bienvenido! al Sorteo por Participacion en donde tendrás 3 Oportunidades para ¡GANAR!</p>
-        <p class="font-semibold">>>SERÁN 3 GIROS<<</p>
-        <p>GIRO1️⃣ $10</p>
-        <p>GIRO2️⃣ $10</p>
-        <p>GIRO3️⃣ $50 🏆</p>
-        <p class="font-bold">¡QUE GANE EL MEJOR!</p>
+    room.innerHTML = `
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-lg font-bold flex items-center gap-2">Sala #${id}</h3>
+        ${extraInfoHTML}
       </div>
+      <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
+      <button onclick="connectWallet(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
+      <iframe
+        id="wheel-${id}"
+        src="https://wheelofnames.com/bh2-bm6"
+        width="400"
+        height="400"
+        style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
+      ></iframe>
     `;
 
-    function createRoom(id, participants = 0) {
-      const room = document.createElement("div");
-      room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
-      room.setAttribute("data-id", id);
-      room.setAttribute("data-participants", participants);
+    roomsContainer.appendChild(room);
+    roomsData.push({ id, participants });
+  }
 
-      room.innerHTML = `
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-lg font-bold flex items-center gap-2">Sala #${id}</h3>
-          ${extraInfoHTML}
-        </div>
-        <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
-        <button onclick="connectWallet(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
-        <iframe
-          src="https://wheelofnames.com/bh2-bm6"
-          width="400"
-          height="400"
-          style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
-        ></iframe>
-      `;
-
-      roomsContainer.appendChild(room);
-      roomsData.push({ id, participants });
-    }
-
-    function populateRooms() {
-      for (let i = 1; i <= 10; i++) {
-        const randomParticipants = (i === 1) ? 41 : Math.floor(Math.random() * 200);
-        if (randomParticipants < 200) {
-          createRoom(i, randomParticipants);
-        }
+  function populateRooms() {
+    for (let i = 1; i <= 10; i++) {
+      const randomParticipants = (i === 1) ? 41 : Math.floor(Math.random() * 200);
+      if (randomParticipants < 200) {
+        createRoom(i, randomParticipants);
       }
     }
+  }
 
-    function connectWallet(roomId) {
-      if (typeof window.ethereum !== 'undefined') {
-        window.ethereum.request({ method: 'eth_requestAccounts' })
-          .then(accounts => {
-            const wallet = accounts[0];
-            alert(`Wallet conectada: ${wallet}\n¡Te has unido a la Sala #${roomId}!`);
-            const roomEl = document.querySelector(`.room[data-id='${roomId}'] .participant-count`);
-            let newCount = parseInt(roomEl.textContent) + 1;
-            roomEl.textContent = newCount;
-          })
-          .catch(err => {
-            alert('Error al conectar wallet: ' + err.message);
-          });
-      } else {
-        alert('Por favor instala MetaMask para unirte.');
-      }
+  function connectWallet(roomId) {
+    if (typeof window.ethereum !== 'undefined') {
+      window.ethereum.request({ method: 'eth_requestAccounts' })
+        .then(accounts => {
+          const wallet = accounts[0];
+          alert(`Wallet conectada: ${wallet}\n¡Te has unido a la Sala #${roomId}!`);
+
+          // Incrementar participantes
+          const roomEl = document.querySelector(`.room[data-id='${roomId}']`);
+          const participantEl = roomEl.querySelector(".participant-count");
+          let newCount = parseInt(participantEl.textContent) + 1;
+          participantEl.textContent = newCount;
+
+          // Si llegó a 200, activar la rueda
+          if (newCount >= 200) {
+            const iframe = roomEl.querySelector("iframe");
+            if (iframe && iframe.contentWindow) {
+              iframe.contentWindow.postMessage({ spin: true }, "*");
+              alert("🎉 ¡La sala está llena! La rueda está girando automáticamente.");
+            }
+          }
+        })
+        .catch(err => {
+          alert('Error al conectar wallet: ' + err.message);
+        });
+    } else {
+      alert('Por favor instala MetaMask para unirte.');
     }
+  }
 
-    searchInput.addEventListener("input", (e) => {
-      const value = e.target.value.toLowerCase();
-      document.querySelectorAll(".room").forEach(room => {
-        const roomId = room.getAttribute("data-id");
-        room.style.display = roomId.includes(value) ? "block" : "none";
-      });
+  searchInput.addEventListener("input", (e) => {
+    const value = e.target.value.toLowerCase();
+    document.querySelectorAll(".room").forEach(room => {
+      const roomId = room.getAttribute("data-id");
+      room.style.display = roomId.includes(value) ? "block" : "none";
     });
+  });
 
-    populateRooms();
-  </script>
-</body>
-</html>
+  populateRooms();
+</script>
