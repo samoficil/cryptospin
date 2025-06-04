@@ -32,6 +32,18 @@
     const searchInput = document.getElementById("searchInput");
     const roomsData = [];
 
+    const extraInfoHTML = `
+      <div class="ml-4 text-sm space-y-1 max-w-xs">
+        <p class="font-bold text-green-400">GANA $50 CON $0,50</p>
+        <p>3 ENTRE 200 | ¡Bienvenido! al Sorteo por Participacion en donde tendrás 3 Oportunidades para ¡GANAR!</p>
+        <p class="font-semibold">>>SERÁN 3 GIROS<<</p>
+        <p>GIRO1️⃣ $10</p>
+        <p>GIRO2️⃣ $10</p>
+        <p>GIRO3️⃣ $50 🏆</p>
+        <p class="font-bold">¡QUE GANE EL MEJOR!</p>
+      </div>
+    `;
+
     function createRoom(id, participants = 0) {
       const room = document.createElement("div");
       room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
@@ -39,7 +51,10 @@
       room.setAttribute("data-participants", participants);
 
       room.innerHTML = `
-        <h3 class="text-lg font-bold mb-2">Sala #${id}</h3>
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-lg font-bold flex items-center gap-2">Sala #${id}</h3>
+          ${extraInfoHTML}
+        </div>
         <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
         <button onclick="connectWallet(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
         <iframe
@@ -56,7 +71,7 @@
 
     function populateRooms() {
       for (let i = 1; i <= 10; i++) {
-        const randomParticipants = Math.floor(Math.random() * 200);
+        const randomParticipants = (i === 1) ? 41 : Math.floor(Math.random() * 200);
         if (randomParticipants < 200) {
           createRoom(i, randomParticipants);
         }
