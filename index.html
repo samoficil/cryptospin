@@ -45,6 +45,40 @@
       </div>
     `;
 
+    // Cache para el precio BNB para actualizar solo cada 15 seg
+    let cachedBNBPrice = null;
+    let lastPriceFetch = 0;
+
+    async function fetchBNBPrice() {
+      const now = Date.now();
+      if (cachedBNBPrice && now - lastPriceFetch < 15000) {
+        return cachedBNBPrice; // usa cache si es reciente (15 seg)
+      }
+      try {
+        const response = await fetch(
+          'https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd'
+        );
+        const data = await response.json();
+        cachedBNBPrice = data.binancecoin.usd;
+        lastPriceFetch = now;
+        return cachedBNBPrice;
+      } catch (e) {
+        console.error('Error obteniendo precio BNB:', e);
+        return null;
+      }
+    }
+
+    async function updatePrice(priceSpan) {
+      const priceBNB = await fetchBNBPrice();
+      if (!priceBNB) {
+        priceSpan.textContent = "Error al obtener precio";
+        return;
+      }
+      const bnbAmount = (USD_AMOUNT / priceBNB).toFixed(6);
+      priceSpan.textContent = bnbAmount;
+      priceSpan.dataset.bnbAmount = bnbAmount;
+    }
+
     function createRoom(id, participants = 0) {
       const room = document.createElement("div");
       room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
@@ -101,31 +135,7 @@
       });
 
       joinBtn.addEventListener("click", () => joinRoom(id));
-      updatePrice(priceSpan); // obtener el precio al crear la sala
-    }
-
-    async function fetchBNBPrice() {
-      try {
-        const response = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd'
-        );
-        const data = await response.json();
-        return data.binancecoin.usd;
-      } catch (e) {
-        console.error('Error obteniendo precio BNB:', e);
-        return null;
-      }
-    }
-
-    async function updatePrice(priceSpan) {
-      const priceBNB = await fetchBNBPrice();
-      if (!priceBNB) {
-        priceSpan.textContent = "Error al obtener precio";
-        return;
-      }
-      const bnbAmount = (USD_AMOUNT / priceBNB).toFixed(6);
-      priceSpan.textContent = bnbAmount;
-      priceSpan.dataset.bnbAmount = bnbAmount;
+      updatePrice(priceSpan);
     }
 
     async function populateRooms() {
@@ -135,16 +145,20 @@
           createRoom(i, randomParticipants);
         }
       }
-      // Actualizar precios cada 60 segundos para mantenerlos frescos
+      // Actualizar precios cada 15 segundos para rapidez y frescura
       setInterval(() => {
         document.querySelectorAll(".room").forEach(room => {
           const priceSpan = room.querySelector("strong > span");
           updatePrice(priceSpan);
         });
-      }, 60000);
+      }, 15000);
     }
 
     async function switchToBSC() {
+      if (!window.ethereum) {
+        alert('Por favor instala MetaMask u otra wallet compatible con Binance Smart Chain.');
+        return false;
+      }
       try {
         await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
