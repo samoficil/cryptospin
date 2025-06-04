@@ -1,117 +1,90 @@
-<!-- Sala individual con rueda integrada y animación de giro con suspenso -->
-<div class="bg-gray-700 rounded-xl p-4 shadow-xl room" data-id="1" data-participants="50" style="max-width: 820px; margin: auto;">
-  <h3 class="text-lg font-bold mb-2">Sala #1</h3>
-  <p>Participantes: <span class="participant-count">50</span> / 200</p>
-  <button id="joinBtn1" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
-  
-  <div class="mt-4 relative" style="width: 800px; height: 800px;">
-    <canvas id="wheelCanvas1" width="800" height="800"></canvas>
-  </div>
-</div>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CryptoSpin - Sorteos en Cripto</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-900 text-white">
+  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin</header>
 
-<script>
-  // Datos de la rueda (por ejemplo, números 1 a 10)
-  const segments = ["1","2","3","4","5","6","7","8","9","10"];
-  const wheelCanvas = document.getElementById("wheelCanvas1");
-  const ctx = wheelCanvas.getContext("2d");
-  const centerX = wheelCanvas.width / 2;
-  const centerY = wheelCanvas.height / 2;
-  const radius = 350;
-  const segmentAngle = (2 * Math.PI) / segments.length;
+  <main class="p-6">
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">Bienvenido a CryptoSpin</h2>
+      <p>Participa en salas de sorteo automáticas y gana premios en criptomonedas.</p>
+    </section>
 
-  let startAngle = 0;
-  let spinning = false;
-  let spinStartTime;
-  let spinDuration = 20000; // 20 segundos
+    <!-- Buscador de salas -->
+    <div class="mb-6">
+      <input type="text" id="searchInput" placeholder="Buscar sala por número..." class="w-full p-2 rounded text-black" />
+    </div>
 
-  // Ganador elegido aleatoriamente (puede venir dinámico)
-  const winnerIndex = Math.floor(Math.random() * segments.length);
+    <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Aquí se insertarán las salas dinámicamente -->
+    </section>
+  </main>
 
-  // Función para dibujar la rueda
-  function drawWheel(angle) {
-    ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = "#fff";
-    ctx.font = "bold 24px Arial";
-    ctx.textAlign = "right";
-    ctx.textBaseline = "middle";
+  <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
 
-    for(let i = 0; i < segments.length; i++) {
-      const start = angle + i * segmentAngle;
-      const end = start + segmentAngle;
-      ctx.beginPath();
-      ctx.fillStyle = i % 2 === 0 ? "#16a34a" : "#22c55e"; // alterna verde oscuro y claro
-      ctx.moveTo(centerX, centerY);
-      ctx.arc(centerX, centerY, radius, start, end);
-      ctx.lineTo(centerX, centerY);
-      ctx.fill();
-      ctx.stroke();
+  <script>
+    const roomsContainer = document.getElementById("rooms");
+    const searchInput = document.getElementById("searchInput");
 
-      // Texto en segmento
-      ctx.save();
-      ctx.fillStyle = "#fff";
-      ctx.translate(centerX + Math.cos(start + segmentAngle / 2) * (radius - 40), centerY + Math.sin(start + segmentAngle / 2) * (radius - 40));
-      ctx.rotate(start + segmentAngle / 2 + Math.PI / 2);
-      ctx.fillText(segments[i], 0, 0);
-      ctx.restore();
+    const roomsData = [];
+
+    function createRoom(id, participants = 0) {
+      const room = document.createElement("div");
+      room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
+      room.setAttribute("data-id", id);
+      room.setAttribute("data-participants", participants);
+
+      room.innerHTML = `
+        <h3 class="text-lg font-bold mb-2">Sala #${id}</h3>
+        <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
+        <button onclick="joinRoom(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
+        <iframe
+          src="https://wheelofnames.com/abc-123"
+          width="400"
+          height="400"
+          style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
+          ></iframe>
+      `;
+
+      roomsContainer.appendChild(room);
+      roomsData.push({ id, participants });
     }
 
-    // Dibuja indicador
-    ctx.fillStyle = "#ff0000";
-    ctx.beginPath();
-    ctx.moveTo(centerX, centerY - radius - 20);
-    ctx.lineTo(centerX - 20, centerY - radius + 20);
-    ctx.lineTo(centerX + 20, centerY - radius + 20);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  // Función de easing para desacelerar al final (easeOutQuad)
-  function easeOutQuad(t) {
-    return t * (2 - t);
-  }
-
-  function animateSpin(timestamp) {
-    if (!spinStartTime) spinStartTime = timestamp;
-    const elapsed = timestamp - spinStartTime;
-
-    if (elapsed < spinDuration) {
-      // Progreso de 0 a 1
-      let progress = elapsed / spinDuration;
-
-      // Acelerar al inicio y desacelerar al final para suspenso
-      // Usamos easing para desacelerar más cerca del final
-      let easedProgress = easeOutQuad(progress);
-
-      // Calcular ángulo total girado
-      // Queremos que termine en el segmento ganador con el puntero arriba
-      const fullSpins = 5; // cantidad de vueltas completas
-      const finalAngle = (2 * Math.PI) * fullSpins + (2 * Math.PI) - (winnerIndex * segmentAngle + segmentAngle / 2);
-
-      startAngle = easedProgress * finalAngle;
-
-      drawWheel(startAngle);
-
-      requestAnimationFrame(animateSpin);
-    } else {
-      // Fin del giro: detener en el ganador con suspenso
-      startAngle = (2 * Math.PI) * 5 + (2 * Math.PI) - (winnerIndex * segmentAngle + segmentAngle / 2);
-      drawWheel(startAngle);
-      alert(`¡La rueda se detuvo en el número ganador: ${segments[winnerIndex]}! 🎉`);
-      spinning = false;
-      document.getElementById("joinBtn1").disabled = false;
-      document.getElementById("joinBtn1").textContent = "Unirse por $0.50";
+    function populateRooms() {
+      for (let i = 1; i <= 10; i++) {
+        const randomParticipants = Math.floor(Math.random() * 200);
+        if (randomParticipants < 200) {
+          createRoom(i, randomParticipants);
+        }
+      }
     }
-  }
 
-  document.getElementById("joinBtn1").addEventListener("click", () => {
-    if (spinning) return;
-    spinning = true;
-    document.getElementById("joinBtn1").disabled = true;
-    document.getElementById("joinBtn1").textContent = "Girando...";
-    spinStartTime = null;
-    requestAnimationFrame(animateSpin);
-  });
+    function joinRoom(id) {
+      const sortedRooms = [...roomsData].filter(r => r.participants < 200).sort((a, b) => b.participants - a.participants);
+      const target = sortedRooms[0];
 
-  drawWheel(0);
-</script>
+      if (target) {
+        alert(`Te has unido a la Sala #${target.id}`);
+        const roomEl = document.querySelector(`.room[data-id='${target.id}'] .participant-count`);
+        let newCount = parseInt(roomEl.textContent) + 1;
+        roomEl.textContent = newCount;
+      }
+    }
+
+    searchInput.addEventListener("input", (e) => {
+      const value = e.target.value.toLowerCase();
+      document.querySelectorAll(".room").forEach(room => {
+        const roomId = room.getAttribute("data-id");
+        room.style.display = roomId.includes(value) ? "block" : "none";
+      });
+    });
+
+    populateRooms();
+  </script>
+</body>
+</html>
