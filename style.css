@@ -1,6 +1,40 @@
-iframe {
-  pointer-events: none;
-  border-radius: 12px;
-  border: 2px solid #4ade80;
-  margin-top: 20px;
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background-color: #f5f5f5;
+}
+header {
+  margin-bottom: 20px;
+}
+nav a {
+  text-decoration: none;
+  margin: 0 5px;
+  color: #0077cc;
+}
+nav a:hover {
+  text-decoration: underline;
+}
+#roomsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.room {
+  background: white;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 0 6px rgba(0,0,0,0.1);
+  width: 300px;
+}
+button {
+  background-color: #0077cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 15px;
+  cursor: pointer;
+}
+button:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
 }
