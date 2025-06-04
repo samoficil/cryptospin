@@ -5,13 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CryptoSpin - Sorteos en Cripto</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <style>
-    .canvas-container {
-      display: flex;
-      justify-content: center;
-      margin-top: 20px;
-    }
-  </style>
 </head>
 <body class="bg-gray-900 text-white">
   <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin</header>
@@ -28,7 +21,7 @@
     </div>
 
     <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- Salas se insertan aquí -->
+      <!-- Aquí se insertarán las salas dinámicamente -->
     </section>
   </main>
 
@@ -37,92 +30,8 @@
   <script>
     const roomsContainer = document.getElementById("rooms");
     const searchInput = document.getElementById("searchInput");
-    const totalNumbers = 200;
 
-    function createWheel(id) {
-      const canvas = document.createElement("canvas");
-      canvas.width = 400;
-      canvas.height = 400;
-      canvas.style.border = "2px solid #22c55e"; // Verde original
-      canvas.style.borderRadius = "12px";
-      canvas.id = `wheel-${id}`;
-      return canvas;
-    }
-
-    function drawWheel(ctx, numbers, rotation) {
-      const radius = 180;
-      const centerX = ctx.canvas.width / 2;
-      const centerY = ctx.canvas.height / 2;
-      const sliceAngle = (2 * Math.PI) / numbers.length;
-
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      ctx.save();
-      ctx.translate(centerX, centerY);
-      ctx.rotate(rotation);
-
-      for (let i = 0; i < numbers.length; i++) {
-        ctx.fillStyle = i % 2 === 0 ? "#22c55e" : "#16a34a"; // verde claro y oscuro original
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.arc(0, 0, radius, i * sliceAngle, (i + 1) * sliceAngle);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.save();
-        ctx.fillStyle = "#000";
-        ctx.translate(
-          Math.cos(sliceAngle * (i + 0.5)) * (radius - 40),
-          Math.sin(sliceAngle * (i + 0.5)) * (radius - 40)
-        );
-        ctx.rotate(sliceAngle * (i + 0.5) + Math.PI / 2);
-        ctx.font = "10px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(numbers[i], 0, 0);
-        ctx.restore();
-      }
-
-      ctx.restore();
-
-      ctx.fillStyle = "red";
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY - radius - 10);
-      ctx.lineTo(centerX - 15, centerY - radius + 20);
-      ctx.lineTo(centerX + 15, centerY - radius + 20);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    function spinWheel(canvas) {
-      const ctx = canvas.getContext("2d");
-      const numbers = Array.from({ length: totalNumbers }, (_, i) => i + 1);
-      let start = null;
-      let duration = 20000;
-      let rotation = 0;
-      let angularVelocity = 0.5;
-      let easing = t => 1 - Math.pow(1 - t, 3);
-
-      function animate(timestamp) {
-        if (!start) start = timestamp;
-        let elapsed = timestamp - start;
-        let progress = Math.min(elapsed / duration, 1);
-        let easedProgress = easing(progress);
-
-        rotation = angularVelocity * duration * (1 - easedProgress);
-
-        drawWheel(ctx, numbers, rotation);
-
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          let sliceAngle = (2 * Math.PI) / numbers.length;
-          let normalizedRotation = rotation % (2 * Math.PI);
-          let winningIndex = Math.floor((2 * Math.PI - normalizedRotation) / sliceAngle) % numbers.length;
-          alert(`¡Ganador en la rueda: Número ${numbers[winningIndex]}!`);
-        }
-      }
-
-      requestAnimationFrame(animate);
-    }
+    const roomsData = [];
 
     function createRoom(id, participants = 0) {
       const room = document.createElement("div");
@@ -133,22 +42,17 @@
       room.innerHTML = `
         <h3 class="text-lg font-bold mb-2">Sala #${id}</h3>
         <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
-        <button id="join-btn-${id}" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
-        <div class="canvas-container" id="wheel-container-${id}"></div>
+        <button onclick="joinRoom(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
+        <iframe
+          src="https://wheelofnames.com/abc-123"
+          width="400"
+          height="400"
+          style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
+          ></iframe>
       `;
 
       roomsContainer.appendChild(room);
       roomsData.push({ id, participants });
-
-      const wheelContainer = document.getElementById(`wheel-container-${id}`);
-      const canvas = createWheel(id);
-      wheelContainer.appendChild(canvas);
-
-      const joinBtn = document.getElementById(`join-btn-${id}`);
-      joinBtn.addEventListener("click", () => {
-        joinRoom(id);
-        spinWheel(canvas);
-      });
     }
 
     function populateRooms() {
@@ -180,7 +84,6 @@
       });
     });
 
-    const roomsData = [];
     populateRooms();
   </script>
 </body>
