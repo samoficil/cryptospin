@@ -213,124 +213,162 @@
       resetWheel();
     }
 
-    // Volver a listado salas
+    // Volver a la lista de salas
     document.getElementById("backToRooms").onclick = () => {
       currentRoom = null;
-      document.getElementById("rooms").parentElement.style.display = "block";
+      spinning = false;
       document.getElementById("roomDetail").classList.add("hidden");
-      renderRooms(document.getElementById("searchInput").value);
+      document.getElementById("rooms").parentElement.style.display = "block";
+      renderRooms();
     };
 
-    // Rueda y animación
+    // Rueda
     const wheel = document.getElementById("wheel");
-    const spinButton = document.getElementById("spinButton");
+    const spinBtn = document.getElementById("spinButton");
     const winnerAnnounce = document.getElementById("winnerAnnounce");
 
-    let currentRotation = 0;
-
-    // Números del 1 al 200 para la rueda (simplificado a 5 colores por sector para demo)
-    const sectors = 200;
-
-    // Generar números para la rueda - aquí sólo para lógica (visual es con gradiente)
+    // Resetear rueda a 0°
     function resetWheel() {
-      currentRotation = 0;
       wheel.style.transition = "none";
       wheel.style.transform = `rotate(0deg)`;
     }
 
-    // Calcular ganador al azar entre participantes
-    function selectWinner() {
-      if (!currentRoom || currentRoom.participantsList.length === 0) return null;
-      const idx = Math.floor(Math.random() * currentRoom.participantsList.length);
-      return currentRoom.participantsList[idx];
-    }
+    // Ángulos para segmentos (5 segmentos = 72 grados cada uno)
+    // Pero usaremos 5 colores/sectores para el diseño y 3 premios asignados a 3 sectores (0-72, 72-144, 144-216)
+    // Vamos a simplificar: los premios están en 3 sectores consecutivos para que no haya confusión
 
-    // Mostrar ganador en pantalla
-    function showWinner(winner, prize) {
-      winnerAnnounce.innerHTML = `<div class="winner-anim">Ganador: <strong>${winner}</strong> 🎉<br>Premio: $${prize}</div>`;
-    }
-
-    // Función para girar la rueda con suspenso
+    // Girar la rueda con efecto y seleccionar ganador
     function spinWheel() {
       if (spinning) return;
-      if (!currentRoom) return alert("No hay sala seleccionada.");
-      if (currentRoom.participantsList.length === 0) return alert("No hay participantes para girar.");
-
       spinning = true;
-      spinButton.disabled = true;
-      winnerAnnounce.innerHTML = "";
-
+      spinBtn.disabled = true;
       spinCount++;
 
-      // Calcular giro aleatorio entre 3 y 6 vueltas + sector ganador random
-      const extraDegrees = Math.floor(Math.random() * 360);
-      const totalDegrees = 360 * (3 + spinCount) + extraDegrees;
-      currentRotation += totalDegrees;
+      // Elegir premio basado en spinCount (1,2,3) cíclico
+      let prizeIndex = (spinCount - 1) % PRIZES.length;
+      let prizeAmount = PRIZES[prizeIndex];
 
-      wheel.style.transition = `transform ${SPIN_DELAY}ms cubic-bezier(0.33, 1, 0.68, 1)`;
-      wheel.style.transform = `rotate(${currentRotation}deg)`;
+      // Elegir un ángulo aleatorio dentro del sector premio
+      // Sectores:
+      // Sector 1: 0-72 grados => premio 10$
+      // Sector 2: 72-144 grados => premio 10$
+      // Sector 3: 144-216 grados => premio 50$
+      // Los otros sectores no tienen premio (simulamos solo 3 premios en 3 sectores)
 
-      // Al terminar animación
+      const sectorAngles = [
+        {start: 0, end: 72},
+        {start: 72, end: 144},
+        {start: 144, end: 216}
+      ];
+
+      // Calculamos ángulo final de giro para que el puntero quede en premio deseado
+      // Vamos a girar la rueda muchas vueltas + ángulo aleatorio dentro sector
+      const fullRotations = 8; // vueltas completas para animación
+      const sector = sectorAngles[prizeIndex];
+      const randomAngleInSector = Math.floor(Math.random() * (sector.end - sector.start)) + sector.start;
+      const finalAngle = fullRotations * 360 + (360 - randomAngleInSector); // invertimos para que puntero quede en sector
+
+      wheel.style.transition = `transform 7s cubic-bezier(0.33, 1, 0.68, 1)`;
+      wheel.style.transform = `rotate(${finalAngle}deg)`;
+
+      // Después de la animación, mostrar ganador
       setTimeout(() => {
-        // Seleccionar ganador y mostrar
-        const winner = selectWinner();
-        const prize = PRIZES[Math.min(spinCount - 1, PRIZES.length - 1)];
-
-        // Guardar ganador
-        winners.push({
-          roomId: currentRoom.id,
-          winner,
-          prize,
-          date: new Date().toLocaleString()
-        });
-        updateWinnersTable();
-
-        showWinner(winner, prize);
-
-        if (spinCount < 3) {
-          // Permitir siguiente giro después de mostrar ganador un rato
-          setTimeout(() => {
-            winnerAnnounce.innerHTML = "";
-            spinButton.disabled = false;
-            spinning = false;
-          }, WINNER_DISPLAY_TIME);
-        } else {
-          // Fin de los 3 giros, desactivar botón y limpiar estado
-          spinButton.disabled = true;
-          spinning = false;
-          setTimeout(() => {
-            alert("¡Ronda finalizada! Puedes volver a Salas para unirte a otra.");
-          }, 500);
-        }
+        showWinner(prizeAmount);
       }, SPIN_DELAY);
     }
 
-    spinButton.addEventListener("click", spinWheel);
+    // Mostrar ganador en UI y registrar
+    function showWinner(amount) {
+      // Elegir ganador aleatorio de la sala
+      if (!currentRoom || currentRoom.participantsList.length === 0) {
+        winnerAnnounce.innerHTML = "No hay participantes.";
+        resetAfterSpin();
+        return;
+      }
+      const winnerIndex = Math.floor(Math.random() * currentRoom.participantsList.length);
+      const winnerId = currentRoom.participantsList[winnerIndex];
 
-    // Actualizar tabla ganadores
-    function updateWinnersTable() {
+      // Mostrar mensaje ganador
+      winnerAnnounce.innerHTML = `<div class="winner-anim">🎉 Ganador: <strong>${winnerId}</strong> 🎉<br>Premio: $${amount.toFixed(2)}</div>`;
+
+      // Guardar en tabla de ganadores
+      winners.unshift({
+        room: currentRoom.id,
+        winner: winnerId,
+        prize: amount,
+        date: new Date().toLocaleString()
+      });
+
+      renderWinnersTable();
+
+      // Reseteamos la rueda tras un tiempo y si es el 3er giro, cerramos la sala
+      setTimeout(() => {
+        if (spinCount >= 3) {
+          alert(`Sorteo en Sala #${currentRoom.id} finalizado. La sala se cerrará.`);
+          closeRoom(currentRoom.id);
+          backToRooms();
+        } else {
+          resetAfterSpin();
+        }
+      }, WINNER_DISPLAY_TIME);
+    }
+
+    // Reset después de giro para siguiente giro
+    function resetAfterSpin() {
+      resetWheel();
+      spinBtn.disabled = false;
+      spinning = false;
+      document.getElementById("participantCount").textContent = `${currentRoom.participants} / ${MAX_PARTICIPANTS}`;
+      winnerAnnounce.innerHTML = "";
+    }
+
+    // Cerrar sala (vaciar participantes y bloquear)
+    function closeRoom(id) {
+      const room = rooms.find(r => r.id === id);
+      if (room) {
+        room.participants = MAX_PARTICIPANTS;
+        room.participantsList = [];
+      }
+    }
+
+    // Render tabla ganadores
+    function renderWinnersTable() {
       const tbody = document.getElementById("winnersTableBody");
       tbody.innerHTML = "";
-
-      // Mostrar últimos 10 ganadores
-      const lastWinners = winners.slice(-10).reverse();
-
-      lastWinners.forEach(w => {
+      if (winners.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-gray-400 p-4">No hay ganadores aún.</td></tr>`;
+        return;
+      }
+      for (const w of winners) {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td class="border border-gray-600 p-2">${w.roomId}</td>
+          <td class="border border-gray-600 p-2">Sala #${w.room}</td>
           <td class="border border-gray-600 p-2">${w.winner}</td>
-          <td class="border border-gray-600 p-2">$${w.prize}</td>
+          <td class="border border-gray-600 p-2">$${w.prize.toFixed(2)}</td>
           <td class="border border-gray-600 p-2">${w.date}</td>
         `;
         tbody.appendChild(tr);
-      });
+      }
     }
 
-    // Inicio
+    // Función para volver a lista de salas desde detalle
+    function backToRooms() {
+      currentRoom = null;
+      spinning = false;
+      document.getElementById("roomDetail").classList.add("hidden");
+      document.getElementById("rooms").parentElement.style.display = "block";
+      renderRooms();
+    }
+
+    // Botón girar rueda
+    spinBtn.onclick = () => {
+      spinWheel();
+    };
+
+    // Inicialización
     createRooms();
     renderRooms();
-
+    renderWinnersTable();
   </script>
 </body>
 </html>
