@@ -1,121 +1,44 @@
-<!-- Proyecto: CryptoSpin - Plataforma de Sorteos con CriptoPagos -->
+<!-- Proyecto: Plataforma de Sorteos con CriptoPagos -->
+<!-- Nombre temporal: CryptoSpin -->
+
+<!-- Este esqueleto HTML básico marca el inicio del desarrollo -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CryptoSpin - Sorteos en Cripto</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <style>
-    /* Rueda */
-    #wheel {
-      border: 8px solid #444;
-      border-radius: 50%;
-      width: 300px;
-      height: 300px;
-      margin: auto;
-      position: relative;
-      overflow: hidden;
-      background: conic-gradient(
-        #FFD700 0deg 72deg, 
-        #FF4500 72deg 144deg, 
-        #1E90FF 144deg 216deg, 
-        #32CD32 216deg 288deg, 
-        #FFD700 288deg 360deg);
-      transition-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
-    }
-    #pointer {
-      position: absolute;
-      top: -15px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 0;
-      border-left: 15px solid transparent;
-      border-right: 15px solid transparent;
-      border-bottom: 30px solid #ffdd00;
-      z-index: 10;
-    }
-    #spinButton {
-      background: #22c55e;
-      color: white;
-      font-weight: 700;
-      padding: 10px 20px;
-      border-radius: 10px;
-      cursor: pointer;
-      margin: 20px auto 0 auto;
-      display: block;
-      transition: background-color 0.3s ease;
-    }
-    #spinButton:disabled {
-      background-color: #94a3b8;
-      cursor: not-allowed;
-    }
-    .winner-anim {
-      animation: applause 2s ease forwards;
-      font-size: 1.5rem;
-      color: #facc15;
-      font-weight: 700;
-      margin-top: 10px;
-      text-align: center;
-    }
-    @keyframes applause {
-      0% {opacity: 0; transform: scale(0.8);}
-      50% {opacity: 1; transform: scale(1.2);}
-      100% {opacity: 1; transform: scale(1);}
-    }
-  </style>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex flex-col">
-
-  <header class="p-4 bg-gray-800 text-center text-3xl font-bold">
-    CryptoSpin 🎰
+<body class="bg-gray-900 text-white">
+  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">
+    CryptoSpin
   </header>
 
-  <main class="flex-grow p-6 max-w-6xl mx-auto">
-
-    <section class="mb-8">
-      <h2 class="text-xl font-semibold mb-3">Salas Disponibles</h2>
-      <input type="text" id="searchInput" placeholder="Buscar sala por número..." class="w-full p-2 rounded text-black mb-4" />
-
-      <div id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <!-- Salas se agregan dinámicamente aquí -->
-      </div>
+  <main class="p-6">
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">Bienvenido a CryptoSpin</h2>
+      <p>Participa en salas de sorteo automáticas y gana premios en criptomonedas.</p>
     </section>
 
-    <section id="roomDetail" class="hidden p-6 bg-gray-800 rounded-xl shadow-xl max-w-md mx-auto text-center">
-      <h3 id="roomTitle" class="text-2xl font-bold mb-4"></h3>
-      <p>Participantes: <span id="participantCount"></span> / 200</p>
+    <!-- Buscador de salas -->
+    <div class="mb-6">
+      <input type="text" id="searchInput" placeholder="Buscar sala por número..." class="w-full p-2 rounded text-black" />
+    </div>
 
-      <div id="wheelContainer" class="my-6 relative">
-        <div id="pointer"></div>
-        <div id="wheel"></div>
-      </div>
+    <iframe
+      src="https://wheelofnames.com/abc-123"
+      width="800"
+      height="800"
+      class="mx-auto mb-6 block"
+      title="Rueda de nombres"
+      frameborder="0"
+      allowfullscreen
+    ></iframe>
 
-      <button id="spinButton" disabled>Girar rueda</button>
-
-      <div id="winnerAnnounce" class="mt-4"></div>
-
-      <button id="backToRooms" class="mt-6 px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">Volver a Salas</button>
+    <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Aquí se insertarán las salas dinámicamente -->
     </section>
-
-    <section class="mt-12">
-      <h2 class="text-xl font-semibold mb-3">Tabla de Ganadores</h2>
-      <table class="w-full text-left border-collapse border border-gray-700">
-        <thead>
-          <tr class="bg-gray-700">
-            <th class="border border-gray-600 p-2">Sala</th>
-            <th class="border border-gray-600 p-2">Ganador</th>
-            <th class="border border-gray-600 p-2">Premio</th>
-            <th class="border border-gray-600 p-2">Fecha</th>
-          </tr>
-        </thead>
-        <tbody id="winnersTableBody">
-          <!-- Ganadores se agregan dinámicamente -->
-        </tbody>
-      </table>
-    </section>
-
   </main>
 
   <footer class="p-4 bg-gray-800 text-center">
@@ -123,207 +46,59 @@
   </footer>
 
   <script>
-    // Datos y configuración base
-    const MAX_PARTICIPANTS = 200;
-    const ENTRY_COST = 0.50; // dólares
-    const PRIZES = [10, 10, 50]; // premios de los 3 giros
-    const SPIN_DELAY = 7000; // ms entre giros
-    const WINNER_DISPLAY_TIME = 7000; // ms para mostrar ganador antes de siguiente giro
+    const roomsContainer = document.getElementById("rooms");
+    const searchInput = document.getElementById("searchInput");
 
-    // Salas con participantes
-    const rooms = [];
-    const winners = []; // historial ganadores para tabla
+    const roomsData = [];
 
-    // Estado actual
-    let currentRoom = null;
-    let spinCount = 0;
-    let spinning = false;
+    function createRoom(id, participants = 0) {
+      const room = document.createElement("div");
+      room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
+      room.setAttribute("data-id", id);
+      room.setAttribute("data-participants", participants);
 
-    // Crear las 10 salas iniciales
-    function createRooms() {
+      room.innerHTML = `
+        <h3 class="text-lg font-bold mb-2">Sala #${id}</h3>
+        <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
+        <button onclick="joinRoom(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
+      `;
+
+      roomsContainer.appendChild(room);
+      roomsData.push({ id, participants });
+    }
+
+    function populateRooms() {
       for (let i = 1; i <= 10; i++) {
-        rooms.push({ id: i, participants: 0, participantsList: [] });
+        const randomParticipants = Math.floor(Math.random() * 200);
+        if (randomParticipants < 200) {
+          createRoom(i, randomParticipants);
+        }
       }
     }
 
-    // Render salas visibles según búsqueda
-    function renderRooms(filter = "") {
-      const container = document.getElementById("rooms");
-      container.innerHTML = "";
+    function joinRoom(id) {
+      // Lógica de unión a la sala más cercana a llenarse
+      const sortedRooms = [...roomsData].filter(r => r.participants < 200).sort((a, b) => b.participants - a.participants);
+      const target = sortedRooms[0];
 
-      let filteredRooms = rooms.filter(room => room.id.toString().includes(filter));
-
-      // Mostrar salas que no estén llenas y ordenadas por participantes descendente
-      filteredRooms = filteredRooms.filter(r => r.participants < MAX_PARTICIPANTS);
-      filteredRooms.sort((a, b) => b.participants - a.participants);
-
-      for (const room of filteredRooms) {
-        const div = document.createElement("div");
-        div.className = "bg-gray-700 rounded-xl p-4 shadow-xl room cursor-pointer hover:bg-gray-600";
-        div.innerHTML = `
-          <h3 class="text-lg font-bold mb-2">Sala #${room.id}</h3>
-          <p>Participantes: <span>${room.participants}</span> / ${MAX_PARTICIPANTS}</p>
-          <button class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full" onclick="joinRoom(${room.id})">Unirse por $${ENTRY_COST.toFixed(2)}</button>
-        `;
-        container.appendChild(div);
-      }
-
-      if(filteredRooms.length === 0) {
-        container.innerHTML = "<p class='text-center text-gray-400'>No hay salas disponibles para unirse.</p>";
+      if (target) {
+        alert(`Te has unido a la Sala #${target.id}`);
+        // Actualizar participante visualmente
+        const roomEl = document.querySelector(`.room[data-id='${target.id}'] .participant-count`);
+        let newCount = parseInt(roomEl.textContent) + 1;
+        roomEl.textContent = newCount;
       }
     }
 
-    // Filtrar salas con input
-    document.getElementById("searchInput").addEventListener("input", e => {
-      renderRooms(e.target.value);
+    searchInput.addEventListener("input", (e) => {
+      const value = e.target.value.toLowerCase();
+      document.querySelectorAll(".room").forEach(room => {
+        const roomId = room.getAttribute("data-id");
+        room.style.display = roomId.includes(value) ? "block" : "none";
+      });
     });
 
-    // Función para unirse a sala
-    function joinRoom(id) {
-      if (spinning) {
-        alert("Espera a que termine el giro actual.");
-        return;
-      }
-      const room = rooms.find(r => r.id === id);
-      if (!room) return alert("Sala no encontrada.");
-      if (room.participants >= MAX_PARTICIPANTS) return alert("Sala llena.");
-
-      // Simular usuario único con ID generado (puedes adaptar)
-      const userId = "user_" + Math.floor(Math.random() * 1000000);
-
-      // Agregar participante
-      room.participants++;
-      room.participantsList.push(userId);
-
-      // Mostrar detalles de la sala y activar la rueda
-      openRoomDetail(room);
-    }
-
-    // Abrir vista detalle sala
-    function openRoomDetail(room) {
-      currentRoom = room;
-      spinCount = 0;
-      spinning = false;
-      document.getElementById("roomTitle").textContent = `Sala #${room.id}`;
-      document.getElementById("participantCount").textContent = `${room.participants} / ${MAX_PARTICIPANTS}`;
-      document.getElementById("winnerAnnounce").innerHTML = "";
-      document.getElementById("spinButton").disabled = false;
-      document.getElementById("rooms").parentElement.style.display = "none";
-      document.getElementById("roomDetail").classList.remove("hidden");
-      resetWheel();
-    }
-
-    // Volver a listado salas
-    document.getElementById("backToRooms").onclick = () => {
-      currentRoom = null;
-      document.getElementById("rooms").parentElement.style.display = "block";
-      document.getElementById("roomDetail").classList.add("hidden");
-      renderRooms();
-    };
-
-    // Rueda y giro
-    const wheel = document.getElementById("wheel");
-    const spinBtn = document.getElementById("spinButton");
-    const winnerAnnounce = document.getElementById("winnerAnnounce");
-
-    // Resetear rueda a 0 grados
-    function resetWheel() {
-      wheel.style.transition = "none";
-      wheel.style.transform = `rotate(0deg)`;
-    }
-
-    // Calcular ángulo random para giro ganador (72 grados por segmento de 5 sectores)
-    function getRandomAngle() {
-      // Seleccionar uno de los 5 sectores al azar
-      return Math.floor(Math.random() * 5) * 72 + 720; // +720 para 2 vueltas completas antes de parar
-    }
-
-    // Obtener premio según el giro
-    function getPrizeBySpin(spinNum) {
-      if (spinNum >= PRIZES.length) return 0;
-      return PRIZES[spinNum];
-    }
-
-    // Obtener ganador random en la sala actual
-    function getRandomWinner() {
-      if (!currentRoom) return null;
-      const list = currentRoom.participantsList;
-      if (list.length === 0) return null;
-      const idx = Math.floor(Math.random() * list.length);
-      return list[idx];
-    }
-
-    // Manejar el giro de la rueda
-    spinBtn.onclick = async () => {
-      if (spinning) return;
-      if (spinCount >= 3) {
-        alert("Ya se han realizado los 3 giros de esta sala.");
-        spinBtn.disabled = true;
-        return;
-      }
-      spinning = true;
-      spinBtn.disabled = true;
-      winnerAnnounce.textContent = "";
-
-      const angle = getRandomAngle();
-      wheel.style.transition = "transform 5s cubic-bezier(0.33, 1, 0.68, 1)";
-      wheel.style.transform = `rotate(${angle}deg)`;
-
-      // Esperar la duración del giro
-      await new Promise(res => setTimeout(res, 5200));
-
-      // Calcular premio y ganador
-      const prize = getPrizeBySpin(spinCount);
-      const winner = getRandomWinner() || "Anon";
-
-      // Guardar ganador
-      winners.unshift({
-        room: currentRoom.id,
-        winner,
-        prize,
-        date: new Date().toLocaleString()
-      });
-
-      // Mostrar anuncio ganador
-      winnerAnnounce.innerHTML = `<div class="winner-anim">Ganador: <strong>${winner}</strong> 🏆 Premio: $${prize.toFixed(2)}</div>`;
-
-      // Actualizar tabla ganadores
-      renderWinnersTable();
-
-      spinCount++;
-      spinning = false;
-
-      // Permitir siguiente giro o desactivar botón si terminó
-      if (spinCount >= 3) {
-        spinBtn.disabled = true;
-      } else {
-        spinBtn.disabled = false;
-      }
-    };
-
-    // Render tabla ganadores
-    function renderWinnersTable() {
-      const tbody = document.getElementById("winnersTableBody");
-      tbody.innerHTML = "";
-
-      for (const w of winners) {
-        const tr = document.createElement("tr");
-        tr.className = "border border-gray-700";
-
-        tr.innerHTML = `
-          <td class="border border-gray-600 p-2">${w.room}</td>
-          <td class="border border-gray-600 p-2">${w.winner}</td>
-          <td class="border border-gray-600 p-2">$${w.prize.toFixed(2)}</td>
-          <td class="border border-gray-600 p-2">${w.date}</td>
-        `;
-        tbody.appendChild(tr);
-      }
-    }
-
-    // Inicialización
-    createRooms();
-    renderRooms();
-    renderWinnersTable();
+    populateRooms();
   </script>
 </body>
 </html>
