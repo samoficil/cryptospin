@@ -219,3 +219,22 @@ async function joinRoom(roomId) {
 }
 
 populateRooms();
+
+const showProfileBtn = document.getElementById("showProfileBtn");
+const userProfile = document.getElementById("userProfile");
+const totalEarningsSpan = document.getElementById("totalEarnings");
+const withdrawBtn = document.getElementById("withdrawBtn");
+const withdrawStatus = document.getElementById("withdrawStatus");
+
+let userEarnings = 0; // Actualiza con tus ganancias reales
+
+showProfileBtn.onclick = () => userProfile.classList.toggle("hidden");
+
+withdrawBtn.onclick = () => {
+  if (userEarnings <= 0) return alert("No tienes ganancias para retirar.");
+  withdrawStatus.textContent = "Procesando retiro...";
+  // Aquí va la lógica real de retiro (contrato o backend)
+  userEarnings = 0;
+  totalEarningsSpan.textContent = "0.00 BNB";
+  withdrawStatus.textContent = "Retiro completado.";
+};
