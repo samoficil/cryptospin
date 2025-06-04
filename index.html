@@ -45,53 +45,22 @@
       </div>
     `;
 
-    // Cache para el precio BNB para actualizar solo cada 15 seg
+    // Para guardar el último precio válido
     let cachedBNBPrice = null;
     let lastPriceFetch = 0;
-
-    async function fetchBNBPrice() {
-      const now = Date.now();
-      if (cachedBNBPrice && now - lastPriceFetch < 15000) {
-        return cachedBNBPrice; // usa cache si es reciente (15 seg)
-      }
-      try {
-        const response = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd'
-        );
-        const data = await response.json();
-        cachedBNBPrice = data.binancecoin.usd;
-        lastPriceFetch = now;
-        return cachedBNBPrice;
-      } catch (e) {
-        console.error('Error obteniendo precio BNB:', e);
-        return null;
-      }
-    }
-
-    async function updatePrice(priceSpan) {
-      const priceBNB = await fetchBNBPrice();
-      if (!priceBNB) {
-        priceSpan.textContent = "Error al obtener precio";
-        return;
-      }
-      const bnbAmount = (USD_AMOUNT / priceBNB).toFixed(6);
-      priceSpan.textContent = bnbAmount;
-      priceSpan.dataset.bnbAmount = bnbAmount;
-    }
 
     function createRoom(id) {
       const room = document.createElement("div");
       room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
       room.setAttribute("data-id", id);
       room.setAttribute("data-participants", 0);
-      room.setAttribute("data-selected-numbers", JSON.stringify([])); // para guardar números ya vendidos
 
       const iframeId = `wheel-${id}`;
       const selectId = `numberSelect-${id}`;
       const buttonId = `joinBtn-${id}`;
       const priceSpanId = `priceSpan-${id}`;
 
-      // Números disponibles, inicialmente 1 a 200
+      // Números disponibles inicialmente todos 1 a 200
       const availableNumbers = Array.from({ length: 200 }, (_, i) => i + 1);
 
       room.innerHTML = `
@@ -137,27 +106,50 @@
       });
 
       joinBtn.addEventListener("click", () => joinRoom(id));
-      updatePrice(priceSpan);
+      updatePrice(priceSpan); // obtener el precio al crear la sala
+    }
+
+    async function fetchBNBPrice() {
+      const now = Date.now();
+      if (cachedBNBPrice && now - lastPriceFetch < 15000) {
+        return cachedBNBPrice;
+      }
+      try {
+        const response = await fetch(
+          'https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd'
+        );
+        if (!response.ok) throw new Error(`HTTP status ${response.status}`);
+        const data = await response.json();
+        cachedBNBPrice = data.binancecoin.usd;
+        lastPriceFetch = now;
+        return cachedBNBPrice;
+      } catch (e) {
+        console.warn('Error obteniendo precio BNB:', e);
+        return cachedBNBPrice || 300; // fallback a precio fijo si falla
+      }
+    }
+
+    async function updatePrice(priceSpan) {
+      const priceBNB = await fetchBNBPrice();
+      const bnbAmount = (USD_AMOUNT / priceBNB).toFixed(6);
+      priceSpan.textContent = bnbAmount;
+      priceSpan.dataset.bnbAmount = bnbAmount;
     }
 
     async function populateRooms() {
       for (let i = 1; i <= 10; i++) {
         createRoom(i);
       }
-      // Actualizar precios cada 15 segundos para rapidez y frescura
+      // Actualizar precios cada 60 segundos para mantenerlos frescos
       setInterval(() => {
         document.querySelectorAll(".room").forEach(room => {
           const priceSpan = room.querySelector("strong > span");
           updatePrice(priceSpan);
         });
-      }, 15000);
+      }, 60000);
     }
 
     async function switchToBSC() {
-      if (!window.ethereum) {
-        alert('Por favor instala MetaMask u otra wallet compatible con Binance Smart Chain.');
-        return false;
-      }
       try {
         await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
@@ -222,61 +214,46 @@
       }
 
       try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const wallet = accounts[0];
-
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        const from = accounts[0];
         const bnbAmount = priceSpan.dataset.bnbAmount;
-        const valueInWei = (bnbAmount * 1e18).toFixed(0);
-        const valueInHex = '0x' + BigInt(valueInWei).toString(16);
 
-        joinBtn.textContent = "Procesando pago en BNB...";
+        joinBtn.textContent = "Enviando transacción...";
 
-        const txHash = await window.ethereum.request({
+        const txParams = {
+          from,
+          to: YOUR_WALLET,
+          value: '0x' + (Math.floor(bnbAmount * 1e18)).toString(16)
+        };
+
+        await window.ethereum.request({
           method: 'eth_sendTransaction',
-          params: [{
-            from: wallet,
-            to: YOUR_WALLET,
-            value: valueInHex,
-          }]
+          params: [txParams],
         });
 
-        alert(`Pago recibido en BNB!\nNúmero seleccionado: ${selectedNumber}\nTx: ${txHash}\n¡Te has unido a la Sala #${roomId}!`);
+        // Sumar participantes y actualizar
+        let currentCount = parseInt(countEl.textContent);
+        currentCount++;
+        countEl.textContent = currentCount;
 
-        // Actualizar contador
-        let newCount = parseInt(countEl.textContent) + 1;
-        countEl.textContent = newCount;
-        roomEl.setAttribute("data-participants", newCount);
+        alert(`¡Te uniste a la Sala #${roomId} con el número ${selectedNumber} exitosamente!`);
 
-        // Marcar número como vendido para deshabilitarlo
-        let selectedNumbers = JSON.parse(roomEl.getAttribute("data-selected-numbers"));
-        selectedNumbers.push(parseInt(selectedNumber));
-        roomEl.setAttribute("data-selected-numbers", JSON.stringify(selectedNumbers));
-
-        // Deshabilitar la opción elegida
+        // Deshabilitar número seleccionado para no repetir (opcional)
         const optionToDisable = selectEl.querySelector(`option[value="${selectedNumber}"]`);
-        if(optionToDisable){
-          optionToDisable.disabled = true;
-        }
-
-        // Reset selección y botón
+        if(optionToDisable) optionToDisable.disabled = true;
         selectEl.value = "";
+
         joinBtn.disabled = true;
-        joinBtn.classList.add("opacity-50", "cursor-not-allowed");
         joinBtn.textContent = "Unirse por $0.50";
 
-        // Si sala llena, girar rueda automáticamente
-        if (newCount >= 200) {
-          alert("¡La sala está llena! Girando la ruleta automáticamente...");
-          const iframe = roomEl.querySelector("iframe");
-          iframe.contentWindow.postMessage({ action: 'spin' }, "*");
-        }
       } catch (error) {
-        alert("Error en el pago o en la conexión: " + error.message);
+        alert("Error enviando transacción: " + error.message);
         joinBtn.disabled = false;
         joinBtn.textContent = "Unirse por $0.50";
       }
     }
 
+    // Inicializa la app
     populateRooms();
   </script>
 </body>
