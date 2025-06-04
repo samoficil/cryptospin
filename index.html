@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CryptoSpin - Sorteos en Cripto</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <style>
+    /* Bloquear interacción con el iframe para que nadie pueda girar manualmente */
+    iframe {
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body class="bg-gray-900 text-white">
   <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin</header>
@@ -21,7 +27,7 @@
     </div>
 
     <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- Aquí se insertarán las salas dinámicamente -->
+      <!-- Salas dinámicas -->
     </section>
   </main>
 
@@ -32,10 +38,12 @@
     const searchInput = document.getElementById("searchInput");
     const roomsData = [];
 
+    const YOUR_WALLET = "0x659a0f0D27378c9f25B97B0fE0F0df6fD1a6D3d4";
+
     const extraInfoHTML = `
       <div class="ml-4 text-sm space-y-1 max-w-xs">
         <p class="font-bold text-green-400">GANA $50 CON $0,50</p>
-        <p>3 ENTRE 200 | ¡Bienvenido! al Sorteo por Participación en donde tendrás 3 Oportunidades para ¡GANAR!</p>
+        <p>3 ENTRE 200 | ¡Bienvenido! al Sorteo por Participacion en donde tendrás 3 Oportunidades para ¡GANAR!</p>
         <p class="font-semibold">>>SERÁN 3 GIROS<<</p>
         <p>GIRO1️⃣ $10</p>
         <p>GIRO2️⃣ $10</p>
@@ -50,7 +58,12 @@
       room.setAttribute("data-id", id);
       room.setAttribute("data-participants", participants);
 
-      const numberOptions = Array.from({length: 200}, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
+      const iframeId = `wheel-${id}`;
+      const selectId = `numberSelect-${id}`;
+      const buttonId = `joinBtn-${id}`;
+
+      // Opciones de números del 1 al 200
+      const availableNumbers = Array.from({ length: 200 }, (_, i) => i + 1);
 
       room.innerHTML = `
         <div class="flex items-center justify-between mb-2">
@@ -58,90 +71,134 @@
           ${extraInfoHTML}
         </div>
         <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
-        <select class="w-full mt-2 text-black p-2 rounded number-selector-${id}">
-          <option value="" disabled selected>Elige tu número (1 - 200)</option>
-          ${numberOptions}
+        <label for="${selectId}" class="block mt-2 text-sm">Escoge tu número:</label>
+        <select id="${selectId}" class="w-full p-2 text-black rounded mb-2">
+          <option value="" selected disabled>-- Selecciona un número --</option>
+          ${availableNumbers.map(n => `<option value="${n}">${n}</option>`).join("")}
         </select>
-        <button onclick="connectWallet(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
+        <button id="${buttonId}" disabled
+          class="bg-green-600 opacity-50 cursor-not-allowed hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">
+          Unirse por $0.50
+        </button>
         <iframe
-          id="wheel-${id}"
-          src="https://wheelofnames.com/bh2-bm6?spin=0"
+          id="${iframeId}"
+          src="https://wheelofnames.com/bh2-bm6"
           width="400"
           height="400"
-          style="pointer-events: none; margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
+          style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
         ></iframe>
       `;
 
       roomsContainer.appendChild(room);
-      roomsData.push({ id, participants });
+      roomsData.push({ id, participants, iframeId, selectId, buttonId });
+
+      // Control para habilitar botón solo si seleccionan número
+      const selectEl = document.getElementById(selectId);
+      const joinBtn = document.getElementById(buttonId);
+      selectEl.addEventListener("change", () => {
+        if (selectEl.value) {
+          joinBtn.disabled = false;
+          joinBtn.classList.remove("opacity-50", "cursor-not-allowed");
+        } else {
+          joinBtn.disabled = true;
+          joinBtn.classList.add("opacity-50", "cursor-not-allowed");
+        }
+      });
+
+      // Evento para unirse
+      joinBtn.addEventListener("click", () => joinRoom(id));
     }
 
     function populateRooms() {
       for (let i = 1; i <= 10; i++) {
-        const randomParticipants = (i === 1) ? 199 : Math.floor(Math.random() * 199);
-        createRoom(i, randomParticipants);
+        const randomParticipants = (i === 1) ? 41 : Math.floor(Math.random() * 200);
+        if (randomParticipants < 200) {
+          createRoom(i, randomParticipants);
+        }
       }
     }
 
-    async function connectWallet(roomId) {
-      const selector = document.querySelector(`.number-selector-${roomId}`);
-      const selectedNumber = selector.value;
+    async function joinRoom(roomId) {
+      const room = roomsData.find(r => r.id === roomId);
+      const roomEl = document.querySelector(`.room[data-id='${roomId}']`);
+      const countEl = roomEl.querySelector(".participant-count");
+      const selectEl = document.getElementById(room.selectId);
+      const selectedNumber = selectEl.value;
+      const joinBtn = document.getElementById(room.buttonId);
 
       if (!selectedNumber) {
-        alert("Por favor elige un número disponible.");
+        alert("Por favor selecciona un número antes de unirte.");
         return;
       }
 
       if (typeof window.ethereum !== 'undefined') {
         try {
+          // Pedir permiso para conectar wallet
           const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
           const wallet = accounts[0];
 
-          const transactionParameters = {
-            to: '0x659a0f0D27378c9f25B97B0fE0F0df6fD1a6D3d4',
-            from: wallet,
-            value: (0.5 * 1e18).toString(16), // 0.50 ETH o el equivalente según red
-          };
+          // Enviar pago automático en BNB (BNB está en Binance Smart Chain, con la misma interface Ethereum)
+          // Valor: 0.50 USD en BNB (aproximado). Aquí ponemos 0.0005 BNB como ejemplo (ajustar según precio real)
+          // Valor en hexadecimal Wei: 0.0005 BNB = 0.0005 * 10^18 = 5 * 10^14 wei = 500000000000000
+          // Hex = 0x1c6bf52634000
 
-          await window.ethereum.request({
+          const valueInHex = '0x1c6bf52634000'; // 0.0005 BNB aprox
+
+          // Deshabilitar botón para evitar doble click
+          joinBtn.disabled = true;
+          joinBtn.textContent = "Procesando pago...";
+
+          const txHash = await window.ethereum.request({
             method: 'eth_sendTransaction',
-            params: [transactionParameters],
+            params: [{
+              from: wallet,
+              to: YOUR_WALLET,
+              value: valueInHex
+            }]
           });
 
-          alert(`¡Te has unido a la Sala #${roomId} con el número ${selectedNumber}!`);
+          alert(`Wallet conectada: ${wallet}\nNúmero seleccionado: ${selectedNumber}\nPago enviado!\nTx: ${txHash}\n¡Te has unido a la Sala #${roomId}!`);
 
-          const roomEl = document.querySelector(`.room[data-id='${roomId}'] .participant-count`);
-          let newCount = parseInt(roomEl.textContent) + 1;
-          roomEl.textContent = newCount;
+          // Actualizar participantes
+          let newCount = parseInt(countEl.textContent) + 1;
+          countEl.textContent = newCount;
+          room.participants = newCount;
 
+          // Deshabilitar el número seleccionado para que no se repita (opcional)
+          selectEl.querySelector(`option[value="${selectedNumber}"]`).disabled = true;
+          selectEl.value = ""; // reset selección
+          joinBtn.disabled = true;
+          joinBtn.classList.add("opacity-50", "cursor-not-allowed");
+          joinBtn.textContent = "Unirse por $0.50";
+
+          // Si la sala está llena, girar la rueda automáticamente
           if (newCount >= 200) {
-            setTimeout(() => {
-              spinWheel(roomId);
-            }, 2000);
+            alert("¡La sala está llena! Girando la ruleta automáticamente...");
+            const iframe = document.getElementById(room.iframeId);
+            // Mandamos mensaje para girar la rueda, si lo soporta
+            iframe.contentWindow.postMessage({ action: 'spin' }, '*');
           }
 
         } catch (err) {
-          alert("Error al conectar o enviar: " + err.message);
+          alert('Error al enviar pago o conectar wallet: ' + err.message);
+          joinBtn.disabled = false;
+          joinBtn.textContent = "Unirse por $0.50";
         }
       } else {
-        alert("Por favor instala MetaMask para unirte.");
+        alert("Por favor instala MetaMask u otra wallet compatible con Binance Smart Chain para pagar.");
       }
     }
 
-    function spinWheel(roomId) {
-      const iframe = document.getElementById(`wheel-${roomId}`);
-      const src = iframe.src;
-      iframe.src = ""; // Reset para recargar
-      setTimeout(() => {
-        iframe.src = src.includes("?") ? `${src}&spin=1` : `${src}?spin=1`;
-      }, 300);
-    }
-
-    searchInput.addEventListener("input", (e) => {
-      const value = e.target.value.toLowerCase();
+    // Filtrar salas por búsqueda
+    searchInput.addEventListener("input", () => {
+      const term = searchInput.value.trim();
       document.querySelectorAll(".room").forEach(room => {
-        const roomId = room.getAttribute("data-id");
-        room.style.display = roomId.includes(value) ? "block" : "none";
+        const id = room.getAttribute("data-id");
+        if (id.includes(term)) {
+          room.style.display = "";
+        } else {
+          room.style.display = "none";
+        }
       });
     });
 
