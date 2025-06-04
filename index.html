@@ -31,9 +31,9 @@
   <script>
     const roomsContainer = document.getElementById("rooms");
     const YOUR_WALLET = "0x659a0f0D27378c9f25B97B0fE0F0df6fD1a6D3d4";
-
-    // Config de BSC Mainnet
-    const BSC_CHAIN_ID = '0x38'; // 56 decimal
+    const BNB_TO_USD = 669.46; // Precio de 1 BNB en USD
+    const USD_AMOUNT = 0.50; // Monto en USD
+    const BNB_AMOUNT = USD_AMOUNT / BNB_TO_USD; // Cantidad de BNB a enviar
 
     const extraInfoHTML = `
       <div class="ml-4 text-sm space-y-1 max-w-xs">
@@ -113,17 +113,16 @@
       try {
         await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
-          params: [{ chainId: BSC_CHAIN_ID }],
+          params: [{ chainId: '0x38' }],
         });
         return true;
       } catch (switchError) {
-        // Si la red no está agregada, la agrega
         if (switchError.code === 4902) {
           try {
             await window.ethereum.request({
               method: 'wallet_addEthereumChain',
               params: [{
-                chainId: BSC_CHAIN_ID,
+                chainId: '0x38',
                 chainName: 'Binance Smart Chain Mainnet',
                 nativeCurrency: {
                   name: 'Binance Coin',
@@ -177,10 +176,7 @@
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         const wallet = accounts[0];
 
-        // Precio fijo en BNB para $0.50 (aprox 0.0005 BNB)
-        // Nota: Ajusta según precio real si quieres más precisión
-        const valueInBNB = 0.0005;
-        const valueInHex = '0x' + (valueInBNB * 1e18).toString(16);
+        const valueInHex = '0x' + (BNB_AMOUNT * 1e18).toString(16);
 
         joinBtn.textContent = "Procesando pago en BNB...";
 
@@ -195,11 +191,9 @@
 
         alert(`Pago recibido en BNB!\nNúmero seleccionado: ${selectedNumber}\nTx: ${txHash}\n¡Te has unido a la Sala #${roomId}!`);
 
-        // Actualizar participantes
         let newCount = parseInt(countEl.textContent) + 1;
         countEl.textContent = newCount;
 
-        // Deshabilitar opción seleccionada para que no se repita (opcional)
         selectEl.querySelector(`option[value="${selectedNumber}"]`).disabled = true;
         selectEl.value = "";
         joinBtn.disabled = true;
