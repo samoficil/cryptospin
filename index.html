@@ -3,26 +3,79 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CryptoSpin - Solo BNB en tiempo real</title>
+  <title>CryptoSpin - Iniciar sesión</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
 </head>
-<body class="bg-gray-900 text-white">
-  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">
-    CryptoSpin - Solo BNB en tiempo real
-  </header>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+  <div class="bg-gray-800 p-6 rounded-xl shadow-lg w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-4 text-center">Registro / Ingreso</h2>
 
-  <main class="p-6">
-    <section class="mb-6">
-      <h2 class="text-xl font-semibold mb-2">Participa y paga solo en BNB</h2>
-      <p>Selecciona un número y paga $0.50 en BNB para unirte.</p>
-    </section>
+    <div class="space-y-4">
+      <input id="username" type="text" placeholder="Nombre de usuario único"
+        class="w-full p-2 rounded bg-gray-700 text-white" />
+      <input id="email" type="email" placeholder="Correo"
+        class="w-full p-2 rounded bg-gray-700 text-white" />
+      <input id="password" type="password" placeholder="Contraseña"
+        class="w-full p-2 rounded bg-gray-700 text-white" />
 
-    <div id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-  </main>
+      <button onclick="registerUser()"
+        class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">
+        Registrarse
+      </button>
 
-  <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
+      <button onclick="loginUser()"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full">
+        Iniciar sesión
+      </button>
+    </div>
 
-  <script src="script.js"></script>
+    <p id="message" class="text-red-400 mt-4 text-center"></p>
+  </div>
+
+  <script>
+    function registerUser() {
+      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!username || !email || !password) {
+        showMessage("Todos los campos son obligatorios");
+        return;
+      }
+
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      const existing = users.find(u => u.username === username);
+
+      if (existing) {
+        showMessage("El nombre de usuario ya existe");
+        return;
+      }
+
+      users.push({ username, email, password });
+      localStorage.setItem("users", JSON.stringify(users));
+      localStorage.setItem("currentUser", JSON.stringify({ username }));
+      window.location.href = "index.html";
+    }
+
+    function loginUser() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      const user = users.find(u => u.username === username && u.password === password);
+
+      if (!user) {
+        showMessage("Credenciales inválidas");
+        return;
+      }
+
+      localStorage.setItem("currentUser", JSON.stringify({ username }));
+      window.location.href = "index.html";
+    }
+
+    function showMessage(msg) {
+      document.getElementById("message").textContent = msg;
+    }
+  </script>
 </body>
 </html>
