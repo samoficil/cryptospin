@@ -15,9 +15,9 @@
   </style>
 </head>
 <body class="bg-gray-900 text-white">
-  <header class="p-4 bg-gray-800 flex justify-between items-center">
-    <h1 class="text-2xl font-bold text-center flex-grow">CryptoSpin - Solo BNB en tiempo real</h1>
-    <button id="profileBtn" class="ml-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-full font-semibold">Perfil</button>
+  <header class="p-4 bg-gray-800 text-center text-2xl font-bold flex justify-between items-center">
+    CryptoSpin - Solo BNB en tiempo real
+    <button id="profileBtn" class="bg-green-600 px-4 py-1 rounded hover:bg-green-700">Perfil</button>
   </header>
 
   <main class="p-6">
@@ -31,19 +31,14 @@
 
   <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
 
-  <!-- Perfil modal -->
-  <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden">
-    <div class="bg-gray-800 rounded-xl p-6 max-w-md w-full relative">
-      <button id="closeProfile" class="absolute top-3 right-3 text-white text-xl font-bold">&times;</button>
-      <h2 class="text-2xl font-bold mb-4">Perfil de Usuario</h2>
-      <div>
-        <p class="mb-2">Ganancias acumuladas:</p>
-        <p id="earnings" class="text-green-400 text-3xl font-bold mb-6">0 BNB</p>
-        <button id="withdrawBtn" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-full font-bold w-full">Retirar Ganancias</button>
-      </div>
-      <div class="mt-6 text-sm text-gray-400">
-        <p><strong>Nota:</strong> Retirar ganancias es simulado. En producción, integraría smart contract o backend para gestionar pagos reales.</p>
-      </div>
+  <!-- Modal Perfil -->
+  <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden">
+    <div class="bg-gray-800 p-6 rounded-lg max-w-md w-full">
+      <h3 class="text-2xl font-bold mb-4">Perfil de Usuario</h3>
+      <p><strong>Wallet:</strong> <span id="userWallet">-</span></p>
+      <p><strong>Ganancias BNB:</strong> <span id="userEarnings">0</span></p>
+      <button id="withdrawBtn" class="mt-4 w-full bg-green-600 hover:bg-green-700 py-2 rounded text-white font-bold">Retirar Ganancias</button>
+      <button id="closeProfileBtn" class="mt-2 w-full bg-gray-600 hover:bg-gray-700 py-2 rounded text-white font-bold">Cerrar</button>
     </div>
   </div>
 
