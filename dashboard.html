@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CryptoSpin - Dashboard</title>
+  <link href="styles.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+  <header class="bg-gray-800 p-4 flex justify-between items-center">
+    <h1 class="text-2xl font-bold">CryptoSpin</h1>
+    <button id="logoutBtn" class="btn-secondary">Cerrar sesión</button>
+  </header>
+
+  <main class="flex-grow p-6 max-w-4xl mx-auto w-full">
+    <section class="mb-8">
+      <h2 class="text-xl font-semibold mb-2">Perfil de Usuario</h2>
+      <p><strong>Wallet:</strong> <span id="userWallet"></span></p>
+      <p><strong>Nombre de Usuario:</strong> <span id="usernameDisplay"></span></p>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-semibold mb-2">Ganancias</h2>
+      <p>Saldo disponible: <strong><span id="balance">0</span> BNB</strong></p>
+      <button id="refreshBalance" class="btn-primary mt-2">Actualizar saldo</button>
+    </section>
+
+    <section>
+      <h2 class="text-xl font-semibold mb-2">Retirar Ganancias</h2>
+      <form id="withdrawForm" class="max-w-sm">
+        <label for="withdrawAmount" class="block mb-2 font-semibold">Monto a retirar (BNB)</label>
+        <input type="number" id="withdrawAmount" min="0.0001" step="0.0001" class="input" required />
+        <button type="submit" class="btn-primary mt-4 w-full">Retirar</button>
+      </form>
+    </section>
+  </main>
+
+<script>
+  const apiUrl = 'http://localhost:3000';
+
+  const userWalletSpan = document.getElementById("userWallet");
+  const usernameSpan = document.getElementById("usernameDisplay");
+  const balanceSpan = document.getElementById("balance");
+  const refreshBtn = document.getElementById("refreshBalance");
+  const withdrawForm = document.getElementById("withdrawForm");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  const userWallet = localStorage.getItem("userWallet");
+  const username = localStorage.getItem("username") || "Sin nombre";
+
+  if (!userWallet) {
+    alert("No has iniciado sesión");
+    window.location.href = "index.html";
+  } else {
+    userWalletSpan.textContent = userWallet;
+    usernameSpan.textContent = username;
+  }
+
+  async function updateBalance() {
+    try {
+      const res = await fetch(`${apiUrl}/balance/${userWallet}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      balanceSpan.textContent = data.balance.toFixed(6);
+    } catch (err) {
+      alert("Error al obtener saldo: " + err.message);
+    }
+  }
+
+  refreshBtn.addEventListener("click", e => {
+    e.preventDefault();
+    updateBalance();
+  });
+
+  withdrawForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    const amount = parseFloat(document.getElementById("withdrawAmount").value);
+    if (amount <= 0) return alert("Monto inválido");
+    try {
+      if (!window.ethereum) return alert("Necesitas MetaMask u otra wallet compatible para retirar");
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+      const from = accounts[0];
+      if (from.toLowerCase() !== userWallet.toLowerCase()) return alert("La wallet conectada no coincide con la wallet registrada");
+      
+      const res = await fetch(apiUrl + '/withdraw', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ wallet: userWallet, amount })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      alert(`¡Retiro exitoso! Nuevo saldo: ${data.newBalance.toFixed(6)} BNB`);
+      updateBalance();
+    } catch(err) {
+      alert("Error: " + err.message);
+    }
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    localStorage.removeItem("userWallet");
+    localStorage.removeItem("username");
+    window.location.href = "index.html";
+  });
+
+  updateBalance();
+</script>
+</body>
+</html>
