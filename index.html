@@ -1,94 +1,171 @@
-<!-- Proyecto: Plataforma de Sorteos con CriptoPagos -->
-<!-- Nombre temporal: CryptoSpin -->
-
-<!-- Este esqueleto HTML básico marca el inicio del desarrollo -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CryptoSpin - Sorteos en Cripto</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
 </head>
 <body class="bg-gray-900 text-white">
-  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">
-    CryptoSpin
-  </header>
+
+  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin</header>
 
   <main class="p-6">
-    <section class="mb-6">
-      <h2 class="text-xl font-semibold mb-2">Bienvenido a CryptoSpin</h2>
-      <p>Participa en salas de sorteo automáticas y gana premios en criptomonedas.</p>
+
+    <!-- Sección Salas -->
+    <section id="roomsSection" class="mb-6">
+      <h2 class="text-xl font-semibold mb-4">Salas disponibles</h2>
+      <div id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </section>
 
-    <!-- Buscador de salas -->
-    <div class="mb-6">
-      <input type="text" id="searchInput" placeholder="Buscar sala por número..." class="w-full p-2 rounded text-black" />
-    </div>
-
-    <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- Aquí se insertarán las salas dinámicamente -->
+    <!-- Sección Rueda (oculta inicialmente) -->
+    <section id="wheelContainer" style="display:none; text-align:center;">
+      <canvas id="wheel" width="500" height="500" class="mx-auto rounded-lg shadow-lg bg-white"></canvas>
+      <button id="spinButton" class="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full">Girar rueda</button>
+      <div id="result" class="mt-6 text-green-400 text-2xl font-bold"></div>
     </section>
+
   </main>
 
-  <footer class="p-4 bg-gray-800 text-center">
-    &copy; 2025 CryptoSpin. Todos los derechos reservados.
-  </footer>
+  <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
 
   <script>
+    // Referencias DOM
     const roomsContainer = document.getElementById("rooms");
-    const searchInput = document.getElementById("searchInput");
+    const roomsSection = document.getElementById("roomsSection");
+    const wheelContainer = document.getElementById("wheelContainer");
+    const spinButton = document.getElementById("spinButton");
+    const resultDiv = document.getElementById("result");
 
+    // Datos salas (puedes cambiar aquí)
     const roomsData = [];
+    const MAX_PARTICIPANTS = 200;
 
+    // Crear sala en DOM
     function createRoom(id, participants = 0) {
       const room = document.createElement("div");
-      room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
+      room.className = "bg-gray-700 rounded-xl p-4 shadow-xl";
       room.setAttribute("data-id", id);
       room.setAttribute("data-participants", participants);
 
       room.innerHTML = `
         <h3 class="text-lg font-bold mb-2">Sala #${id}</h3>
-        <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
-        <button onclick="joinRoom(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
+        <p>Participantes: <span class="participant-count">${participants}</span> / ${MAX_PARTICIPANTS}</p>
+        <button class="join-btn mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
       `;
 
       roomsContainer.appendChild(room);
       roomsData.push({ id, participants });
+
+      // Evento botón Unirse
+      room.querySelector(".join-btn").onclick = () => onJoinClick(id);
     }
 
+    // Crear 10 salas con participantes aleatorios
     function populateRooms() {
+      roomsContainer.innerHTML = "";
+      roomsData.length = 0;
       for (let i = 1; i <= 10; i++) {
-        const randomParticipants = Math.floor(Math.random() * 200);
-        if (randomParticipants < 200) {
-          createRoom(i, randomParticipants);
+        const randomParticipants = Math.floor(Math.random() * MAX_PARTICIPANTS);
+        createRoom(i, randomParticipants);
+      }
+    }
+
+    // Mostrar/Ocultar secciones al unirse
+    function onJoinClick(roomId) {
+      roomsSection.style.display = "none";
+      wheelContainer.style.display = "block";
+      resultDiv.textContent = "";
+      currentAngle = 0;
+      drawWheel();
+    }
+
+    // --- Rueda de la suerte ---
+
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const size = canvas.width;
+    const center = size / 2;
+
+    const segments = 10; // Número de segmentos
+    const segmentAngle = (2 * Math.PI) / segments;
+    const colors = ['#22c55e', '#16a34a']; // colores alternos
+
+    let currentAngle = 0;
+    let angularVelocity = 0;
+    let spinning = false;
+
+    function drawWheel() {
+      ctx.clearRect(0, 0, size, size);
+      for (let i = 0; i < segments; i++) {
+        const startAngle = currentAngle + i * segmentAngle;
+        const endAngle = startAngle + segmentAngle;
+
+        // Color segmento
+        ctx.fillStyle = colors[i % colors.length];
+
+        ctx.beginPath();
+        ctx.moveTo(center, center);
+        ctx.arc(center, center, center - 20, startAngle, endAngle);
+        ctx.lineTo(center, center);
+        ctx.fill();
+
+        // Texto número segmento
+        ctx.save();
+        ctx.translate(center, center);
+        ctx.rotate(startAngle + segmentAngle / 2);
+        ctx.fillStyle = '#000';
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText(i + 1, center - 40, 10);
+        ctx.restore();
+      }
+
+      // Dibuja flecha indicadora arriba
+      ctx.fillStyle = '#f87171'; // rojo claro
+      ctx.beginPath();
+      ctx.moveTo(center - 15, 10);
+      ctx.lineTo(center + 15, 10);
+      ctx.lineTo(center, 40);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function spin() {
+      if (spinning) return;
+      spinning = true;
+      angularVelocity = Math.random() * 0.3 + 0.3; // velocidad inicial aleatoria
+
+      function animate() {
+        if (angularVelocity <= 0.002) {
+          spinning = false;
+          angularVelocity = 0;
+
+          // Calcular ganador
+          const normalizedAngle = currentAngle % (2 * Math.PI);
+          let winningIndex = Math.floor((segments - normalizedAngle / segmentAngle)) % segments;
+          if (winningIndex < 0) winningIndex += segments;
+
+          resultDiv.textContent = `¡Ganador: Segmento #${winningIndex + 1}!`;
+          spinButton.disabled = false;
+          return;
         }
+        currentAngle += angularVelocity;
+        angularVelocity *= 0.97; // desacelerar poco a poco
+        drawWheel();
+        requestAnimationFrame(animate);
       }
+      spinButton.disabled = true;
+      animate();
     }
 
-    function joinRoom(id) {
-      // Lógica de unión a la sala más cercana a llenarse
-      const sortedRooms = [...roomsData].filter(r => r.participants < 200).sort((a, b) => b.participants - a.participants);
-      const target = sortedRooms[0];
+    spinButton.onclick = spin;
 
-      if (target) {
-        alert(`Te has unido a la Sala #${target.id}`);
-        // Actualizar participante visualmente
-        const roomEl = document.querySelector(`.room[data-id='${target.id}'] .participant-count`);
-        let newCount = parseInt(roomEl.textContent) + 1;
-        roomEl.textContent = newCount;
-      }
-    }
-
-    searchInput.addEventListener("input", (e) => {
-      const value = e.target.value.toLowerCase();
-      document.querySelectorAll(".room").forEach(room => {
-        const roomId = room.getAttribute("data-id");
-        room.style.display = roomId.includes(value) ? "block" : "none";
-      });
-    });
-
+    // Inicializar salas y rueda
     populateRooms();
+    drawWheel();
+
   </script>
+
 </body>
 </html>
