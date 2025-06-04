@@ -21,7 +21,7 @@
     </div>
 
     <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- Aquí se insertarán las salas dinámicamente -->
+      <!-- Salas generadas aquí -->
     </section>
   </main>
 
@@ -57,16 +57,31 @@
         </div>
         <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
         <button onclick="connectWallet(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
-        <iframe
-          src="https://wheelofnames.com/bh2-bm6"
-          width="400"
-          height="400"
-          style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
-        ></iframe>
+
+        <!-- Ruleta personalizada con animación -->
+        <div id="wheel-container-${id}" style="position: relative; width: 400px; height: 400px; margin-top: 20px; border-radius: 12px; border: 2px solid #4ade80; background: #1f2937;">
+          <canvas id="wheel-${id}" width="400" height="400" style="border-radius: 12px;"></canvas>
+          <div style="
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 40px solid #4ade80;
+            filter: drop-shadow(0 0 2px #22c55e);
+            z-index: 10;
+          "></div>
+        </div>
       `;
 
       roomsContainer.appendChild(room);
       roomsData.push({ id, participants });
+
+      // Iniciar animación de ruleta para esta sala
+      startWheelAnimation(id);
     }
 
     function populateRooms() {
@@ -103,6 +118,77 @@
         room.style.display = roomId.includes(value) ? "block" : "none";
       });
     });
+
+    function startWheelAnimation(roomId) {
+      const canvas = document.getElementById(`wheel-${roomId}`);
+      const ctx = canvas.getContext('2d');
+      const size = canvas.width;
+      const center = size / 2;
+      const radius = center - 20;
+      const segments = 12;
+      const segmentAngle = (2 * Math.PI) / segments;
+      const colors = ['#22c55e', '#16a34a']; // verdes alternados
+      const labels = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+
+      function drawWheel(rotation = 0) {
+        ctx.clearRect(0,0,size,size);
+        ctx.save();
+        ctx.translate(center, center);
+        ctx.rotate(rotation);
+        for(let i=0; i<segments; i++) {
+          ctx.fillStyle = colors[i % 2];
+          ctx.beginPath();
+          ctx.moveTo(0,0);
+          ctx.arc(0,0,radius,i*segmentAngle,(i+1)*segmentAngle);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 20px Arial';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+
+          const angle = (i + 0.5) * segmentAngle;
+          const x = Math.cos(angle) * (radius - 30);
+          const y = Math.sin(angle) * (radius - 30);
+
+          ctx.save();
+          ctx.translate(x,y);
+          ctx.rotate(angle + Math.PI/2);
+          ctx.fillText(labels[i], 0, 0);
+          ctx.restore();
+        }
+        ctx.restore();
+
+        // Centro negro con borde verde
+        ctx.beginPath();
+        ctx.arc(center, center, 40, 0, 2 * Math.PI);
+        ctx.fillStyle = '#111827';
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#4ade80';
+        ctx.stroke();
+      }
+
+      let currentRotation = 0;
+      const totalRotation = 2 * Math.PI * 6 + Math.random() * 2 * Math.PI;
+      const duration = 4000;
+      const startTime = performance.now();
+
+      function animate(t) {
+        const elapsed = t - startTime;
+        if(elapsed < duration) {
+          const progress = elapsed / duration;
+          const eased = 1 - Math.pow(1 - progress, 3);
+          currentRotation = eased * totalRotation;
+          drawWheel(currentRotation);
+          requestAnimationFrame(animate);
+        } else {
+          drawWheel(totalRotation);
+        }
+      }
+      animate(performance.now());
+    }
 
     populateRooms();
   </script>
