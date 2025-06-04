@@ -1,235 +1,420 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CryptoSpin - Sorteos en Cripto</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <style>
-    canvas {
-      background: #222;
-      border-radius: 50%;
-      box-shadow: 0 0 15px #0f0;
-      display: block;
-      margin: 20px auto;
-    }
-  </style>
-</head>
-<body class="bg-gray-900 text-white">
-  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin</header>
+import React, { useState, useEffect, useRef } from "react";
 
-  <main class="p-6">
-    <section class="mb-6">
-      <h2 class="text-xl font-semibold mb-2">Bienvenido a CryptoSpin</h2>
-      <p>Participa en salas de sorteo automáticas y gana premios en criptomonedas.</p>
-    </section>
+// Configuraciones base
+const SECTORES = 200;
+const COLORES = ["#FFD700", "#FF4500", "#1E90FF", "#32CD32"]; // amarillo, rojo, azul, verde
+const GIROS_TOTALES = 3;
 
-    <!-- Buscador de salas -->
-    <div class="mb-6">
-      <input
-        type="text"
-        id="searchInput"
-        placeholder="Buscar sala por número..."
-        class="w-full p-2 rounded text-black"
+function Wheel({ onNewWinner }) {
+  const [girando, setGirando] = useState(false);
+  const [rotacion, setRotacion] = useState(0);
+  const [ganador, setGanador] = useState(null);
+  const [giroCount, setGiroCount] = useState(0);
+  const animFrameRef = useRef(null);
+
+  const anguloPorSector = 360 / SECTORES;
+
+  // Girar la rueda
+  const girarRueda = () => {
+    if (girando || giroCount >= GIROS_TOTALES) return;
+
+    setGirando(true);
+    setGanador(null);
+
+    const ganadorNum = Math.floor(Math.random() * SECTORES) + 1;
+    const vueltas = 5 * 360;
+    const rotacionFinal = vueltas + (360 - ganadorNum * anguloPorSector);
+
+    let start = null;
+    const duracion = 20000;
+
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+    const animar = (timestamp) => {
+      if (!start) start = timestamp;
+      const elapsed = timestamp - start;
+      const progreso = Math.min(elapsed / duracion, 1);
+      const easeProgress = easeOutCubic(progreso);
+
+      setRotacion(easeProgress * rotacionFinal);
+
+      if (elapsed < duracion) {
+        animFrameRef.current = requestAnimationFrame(animar);
+      } else {
+        setGirando(false);
+        setGanador(ganadorNum);
+        setGiroCount((c) => c + 1);
+        onNewWinner(ganadorNum);
+
+        if (giroCount < GIROS_TOTALES - 1) {
+          setTimeout(() => {
+            girarRueda();
+          }, 7000);
+        }
+      }
+    };
+
+    animFrameRef.current = requestAnimationFrame(animar);
+  };
+
+  useEffect(() => {
+    return () => cancelAnimationFrame(animFrameRef.current);
+  }, []);
+
+  // Generar sectores SVG
+  const sectoresSVG = [];
+  for (let i = 0; i < SECTORES; i++) {
+    const startAngle = i * anguloPorSector;
+    const endAngle = startAngle + anguloPorSector;
+    const largeArcFlag = anguloPorSector > 180 ? 1 : 0;
+
+    const x1 = 150 + 150 * Math.cos((Math.PI * startAngle) / 180);
+    const y1 = 150 + 150 * Math.sin((Math.PI * startAngle) / 180);
+    const x2 = 150 + 150 * Math.cos((Math.PI * endAngle) / 180);
+    const y2 = 150 + 150 * Math.sin((Math.PI * endAngle) / 180);
+
+    const pathData = `
+      M150,150
+      L${x1},${y1}
+      A150,150 0 ${largeArcFlag} 1 ${x2},${y2}
+      Z
+    `;
+
+    sectoresSVG.push(
+      <path
+        key={i}
+        d={pathData}
+        fill={COLORES[i % COLORES.length]}
+        stroke="#fff"
+        strokeWidth="0.5"
       />
+    );
+
+    const textAngle = startAngle + anguloPorSector / 2;
+    const textX = 150 + 100 * Math.cos((Math.PI * textAngle) / 180);
+    const textY = 150 + 100 * Math.sin((Math.PI * textAngle) / 180);
+
+    sectoresSVG.push(
+      <text
+        key={`text-${i}`}
+        x={textX}
+        y={textY}
+        fill="#000"
+        fontSize="8"
+        fontWeight="bold"
+        textAnchor="middle"
+        alignmentBaseline="middle"
+        transform={`rotate(${textAngle + 90}, ${textX}, ${textY})`}
+      >
+        {i + 1}
+      </text>
+    );
+  }
+
+  return (
+    <div style={{ userSelect: "none" }}>
+      <svg
+        width="300"
+        height="300"
+        style={{
+          transform: `rotate(${rotacion}deg)`,
+          transition: girando ? "none" : "transform 0.5s ease-out",
+          borderRadius: "50%",
+          border: "5px solid #444",
+          boxShadow: "0 0 15px rgba(0,0,0,0.2)",
+          background: "#fff",
+          display: "block",
+          margin: "0 auto",
+        }}
+        viewBox="0 0 300 300"
+      >
+        {sectoresSVG}
+      </svg>
+      <button
+        onClick={girando ? null : girarRueda}
+        disabled={girando || giroCount >= GIROS_TOTALES}
+        style={{
+          padding: "10px 20px",
+          fontSize: "18px",
+          cursor: girando || giroCount >= GIROS_TOTALES ? "not-allowed" : "pointer",
+          marginTop: 10,
+          display: "block",
+          marginLeft: "auto",
+          marginRight: "auto",
+        }}
+      >
+        {girando
+          ? "Girando..."
+          : giroCount >= GIROS_TOTALES
+          ? "Juego terminado"
+          : "Girar Rueda"}
+      </button>
+      {ganador && (
+        <div
+          style={{
+            marginTop: 20,
+            fontSize: 24,
+            fontWeight: "bold",
+            color: "#d9534f",
+            textAlign: "center",
+            animation: "aplausos 1s ease-in-out infinite",
+          }}
+        >
+          🎉 ¡Número Ganador: {ganador}! 👏👏👏
+          <br />
+          <span role="img" aria-label="aplausos">
+            👏👏👏🎉🎉🎉
+          </span>
+        </div>
+      )}
+      <style>{`
+        @keyframes aplausos {
+          0%, 100% {opacity:1;}
+          50% {opacity:0.6;}
+        }
+      `}</style>
     </div>
+  );
+}
 
-    <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></section>
-  </main>
+function App() {
+  // Simulamos salas con nombre y participantes
+  const [salas, setSalas] = useState(() =>
+    Array.from({ length: 10 }, (_, i) => ({
+      id: i + 1,
+      nombre: `Sala #${i + 1}`,
+      participantes: 0,
+      maxParticipantes: 200,
+      ganadores: [],
+    }))
+  );
 
-  <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
+  const [busqueda, setBusqueda] = useState("");
+  const [usuario, setUsuario] = useState(null);
+  const [saldo, setSaldo] = useState(0);
+  const [registro, setRegistro] = useState({ email: "", password: "" });
+  const [errorRegistro, setErrorRegistro] = useState("");
+  const [salaActiva, setSalaActiva] = useState(null);
 
-  <script>
-    const roomsContainer = document.getElementById("rooms");
-    const searchInput = document.getElementById("searchInput");
+  // Ganadores diarios y semanales (simulados)
+  const [ganadoresDiarios, setGanadoresDiarios] = useState([]);
+  const [ganadoresSemanales, setGanadoresSemanales] = useState([]);
 
-    const segments = 200;
-    const segmentAngle = (2 * Math.PI) / segments;
-    const radius = 200;
+  // Filtrar salas por búsqueda y que no estén llenas
+  const salasFiltradas = salas.filter(
+    (s) =>
+      s.nombre.toLowerCase().includes(busqueda.toLowerCase()) &&
+      s.participantes < s.maxParticipantes
+  );
 
-    const roomsData = [];
-
-    // Crear salas
-    function createRoom(id, participants = 0) {
-      const room = document.createElement("div");
-      room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
-      room.setAttribute("data-id", id);
-      room.setAttribute("data-participants", participants);
-
-      room.innerHTML = `
-        <h3 class="text-lg font-bold mb-2">Sala #${id}</h3>
-        <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
-        <button class="join-btn mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">
-          Unirse por $0.50
-        </button>
-        <div class="wheel-container mt-4"></div> <!-- Aquí va la rueda y resultado -->
-      `;
-
-      roomsContainer.appendChild(room);
-      roomsData.push({ id, participants });
-
-      // Evento botón unirse
-      room.querySelector(".join-btn").addEventListener("click", () => joinRoom(id));
+  // Al registrar nuevo usuario (sin backend real)
+  const registrar = () => {
+    if (!registro.email.includes("@") || registro.password.length < 6) {
+      setErrorRegistro("Email inválido o contraseña < 6 caracteres");
+      return;
     }
+    setUsuario({ email: registro.email });
+    setSaldo(0);
+    setErrorRegistro("");
+  };
 
-    // Rellenar salas
-    function populateRooms() {
-      for (let i = 1; i <= 10; i++) {
-        const randomParticipants = Math.floor(Math.random() * 200);
-        if (randomParticipants < 200) {
-          createRoom(i, randomParticipants);
-        }
-      }
+  // Usuario compra números en sala (cada número cuesta $0.50)
+  const comprarNumeros = (cantidad) => {
+    const costo = 0.5 * cantidad;
+    if (saldo < costo) {
+      alert("Saldo insuficiente, recarga primero.");
+      return;
     }
-
-    // Color por segmento
-    function getColor(i) {
-      return i % 2 === 0 ? "#0f0" : "#050";
+    if (!salaActiva) {
+      alert("Selecciona una sala primero");
+      return;
     }
+    // Sumar participantes en la sala
+    setSalas((prev) =>
+      prev.map((s) =>
+        s.id === salaActiva.id
+          ? {
+              ...s,
+              participantes: Math.min(s.participantes + cantidad, s.maxParticipantes),
+            }
+          : s
+      )
+    );
+    setSaldo((s) => s - costo);
+    alert(`Compraste ${cantidad} números en ${salaActiva.nombre}`);
+  };
 
-    // Función para dibujar la rueda en un canvas dado
-    function drawWheel(ctx, currentAngle) {
-      ctx.clearRect(0, 0, radius * 2 + 40, radius * 2 + 40);
-      ctx.save();
-      ctx.translate(radius + 20, radius + 20);
-      ctx.rotate(currentAngle);
+  // Recargar saldo mínimo $2 (simulado)
+  const recargarSaldo = () => {
+    setSaldo((s) => s + 2);
+    alert("Recarga de $2 realizada");
+  };
 
-      for (let i = 0; i < segments; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.fillStyle = getColor(i);
-        ctx.arc(0, 0, radius, i * segmentAngle, (i + 1) * segmentAngle);
-        ctx.fill();
-        ctx.strokeStyle = "#000";
-        ctx.lineWidth = 0.3;
-        ctx.stroke();
+  // Cuando la rueda elige ganador
+  const onNewWinner = (numero) => {
+    if (!salaActiva) return;
 
-        ctx.save();
-        ctx.fillStyle = "white";
-        ctx.translate(
-          Math.cos(i * segmentAngle + segmentAngle / 2) * (radius - 25),
-          Math.sin(i * segmentAngle + segmentAngle / 2) * (radius - 25)
-        );
-        ctx.rotate(i * segmentAngle + segmentAngle / 2 + Math.PI / 2);
-        ctx.font = "10px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(i + 1, 0, 0);
-        ctx.restore();
-      }
+    const ganador = { numero, fecha: new Date().toLocaleString() };
 
-      ctx.restore();
+    setGanadoresDiarios((prev) => [ganador, ...prev].slice(0, 20));
+    setGanadoresSemanales((prev) => [ganador, ...prev].slice(0, 20));
 
-      // Flecha indicadora fija arriba
-      ctx.fillStyle = "red";
-      ctx.beginPath();
-      ctx.moveTo(radius + 20 - 15, 10);
-      ctx.lineTo(radius + 20 + 15, 10);
-      ctx.lineTo(radius + 20, 40);
-      ctx.closePath();
-      ctx.fill();
-    }
+    // Guardar ganador en sala
+    setSalas((prev) =>
+      prev.map((s) =>
+        s.id === salaActiva.id ? { ...s, ganadores: [ganador, ...s.ganadores].slice(0, 10) } : s
+      )
+    );
+  };
 
-    // Girar rueda con desaceleración lenta y duración 20s
-    function spinWheel(canvas, resultDiv) {
-      if (canvas.spinning) return;
-      canvas.spinning = true;
-      resultDiv.textContent = "";
+  return (
+    <div style={{ maxWidth: 800, margin: "auto", fontFamily: "Arial, sans-serif", padding: 20 }}>
+      <h1 style={{ textAlign: "center" }}>🎡 Rueda de Números - React Completo</h1>
 
-      const ctx = canvas.getContext("2d");
-      let currentAngle = 0;
+      {!usuario ? (
+        <div
+          style={{
+            border: "1px solid #ccc",
+            padding: 20,
+            borderRadius: 8,
+            maxWidth: 400,
+            margin: "auto",
+          }}
+        >
+          <h2>Registro</h2>
+          <input
+            type="email"
+            placeholder="Email"
+            value={registro.email}
+            onChange={(e) => setRegistro({ ...registro, email: e.target.value })}
+            style={{ width: "100%", padding: 8, marginBottom: 10, fontSize: 16 }}
+          />
+          <input
+            type="password"
+            placeholder="Contraseña (mín 6 caracteres)"
+            value={registro.password}
+            onChange={(e) => setRegistro({ ...registro, password: e.target.value })}
+            style={{ width: "100%", padding: 8, marginBottom: 10, fontSize: 16 }}
+          />
+          {errorRegistro && <p style={{ color: "red" }}>{errorRegistro}</p>}
+          <button
+            onClick={registrar}
+            style={{
+              width: "100%",
+              padding: 10,
+              fontSize: 18,
+              cursor: "pointer",
+              backgroundColor: "#28a745",
+              color: "#fff",
+              border: "none",
+              borderRadius: 5,
+            }}
+          >
+            Registrarse
+          </button>
+        </div>
+      ) : (
+        <>
+          <div style={{ textAlign: "right", marginBottom: 20 }}>
+            <b>Usuario:</b> {usuario.email} | <b>Saldo:</b> ${saldo.toFixed(2)}{" "}
+            <button onClick={recargarSaldo} style={{ marginLeft: 10 }}>
+              Recargar $2
+            </button>
+          </div>
 
-      const duration = 20000; // 20 segundos
-      const suspenseDuration = 5000; // últimos 5 segundos lentos
-      const start = performance.now();
+          {/* Buscador y lista salas */}
+          <div style={{ marginBottom: 20 }}>
+            <input
+              type="text"
+              placeholder="Buscar sala..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              style={{ width: "100%", padding: 10, fontSize: 16 }}
+            />
+            <div
+              style={{
+                maxHeight: 150,
+                overflowY: "auto",
+                marginTop: 10,
+                border: "1px solid #ccc",
+                borderRadius: 5,
+              }}
+            >
+              {salasFiltradas.length === 0 && <p style={{ padding: 10 }}>No hay salas disponibles</p>}
+              {salasFiltradas.map((s) => (
+                <div
+                  key={s.id}
+                  onClick={() => setSalaActiva(s)}
+                  style={{
+                    padding: 10,
+                    cursor: "pointer",
+                    backgroundColor: salaActiva?.id === s.id ? "#007bff" : "transparent",
+                    color: salaActiva?.id === s.id ? "#fff" : "#000",
+                    borderBottom: "1px solid #ddd",
+                  }}
+                >
+                  {s.nombre} - Participantes: {s.participantes}/{s.maxParticipantes}
+                </div>
+              ))}
+            </div>
+          </div>
 
-      const maxAngularVelocity = 0.6;
-      const minAngularVelocity = 0.01;
+          {/* Comprar números */}
+          {salaActiva && (
+            <div style={{ marginBottom: 20 }}>
+              <h3>
+                Sala activa: <span style={{ color: "#007bff" }}>{salaActiva.nombre}</span>
+              </h3>
+              <button
+                onClick={() => comprarNumeros(1)}
+                style={{ marginRight: 10, padding: "8px 15px", fontSize: 16 }}
+              >
+                Comprar 1 número ($0.50)
+              </button>
+              <button
+                onClick={() => comprarNumeros(5)}
+                style={{ marginRight: 10, padding: "8px 15px", fontSize: 16 }}
+              >
+                Comprar 5 números ($2.50)
+              </button>
+              <button
+                onClick={() => comprarNumeros(10)}
+                style={{ padding: "8px 15px", fontSize: 16 }}
+              >
+                Comprar 10 números ($5.00)
+              </button>
+            </div>
+          )}
 
-      function animate(time) {
-        const elapsed = time - start;
+          {/* Rueda */}
+          <Wheel onNewWinner={onNewWinner} />
 
-        if (elapsed >= duration) {
-          canvas.spinning = false;
-          const normalizedAngle = currentAngle % (2 * Math.PI);
-          let winningIndex = Math.floor((segments - normalizedAngle / segmentAngle)) % segments;
-          if (winningIndex < 0) winningIndex += segments;
+          {/* Ganadores */}
+          <div style={{ marginTop: 30 }}>
+            <h2>Ganadores Diarios</h2>
+            <ul style={{ maxHeight: 150, overflowY: "auto" }}>
+              {ganadoresDiarios.length === 0 && <li>No hay ganadores aún</li>}
+              {ganadoresDiarios.map((g, i) => (
+                <li key={i}>
+                  Número: <b>{g.numero}</b> | Hora: {g.fecha}
+                </li>
+              ))}
+            </ul>
 
-          resultDiv.textContent = `¡Ganador: Segmento #${winningIndex + 1}!`;
-          return;
-        }
+            <h2>Ganadores Semanales</h2>
+            <ul style={{ maxHeight: 150, overflowY: "auto" }}>
+              {ganadoresSemanales.length === 0 && <li>No hay ganadores aún</li>}
+              {ganadoresSemanales.map((g, i) => (
+                <li key={i}>
+                  Número: <b>{g.numero}</b> | Hora: {g.fecha}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
-        let angularVelocity;
-        if (elapsed < duration - suspenseDuration) {
-          angularVelocity = maxAngularVelocity * (1 - elapsed / (duration - suspenseDuration));
-        } else {
-          const suspenseElapsed = elapsed - (duration - suspenseDuration);
-          const t = suspenseElapsed / suspenseDuration;
-          angularVelocity = minAngularVelocity + (maxAngularVelocity - minAngularVelocity) * (1 - t) * (1 - t);
-        }
-
-        currentAngle += angularVelocity;
-        drawWheel(ctx, currentAngle);
-
-        requestAnimationFrame(animate);
-      }
-
-      requestAnimationFrame(animate);
-    }
-
-    // Lógica para unirse a sala y mostrar la rueda dentro de esa sala
-    function joinRoom(id) {
-      const roomEl = document.querySelector(`.room[data-id='${id}']`);
-      if (!roomEl) return;
-
-      // Actualizar participantes
-      const participantCountEl = roomEl.querySelector(".participant-count");
-      let count = parseInt(participantCountEl.textContent);
-      if (count >= 200) {
-        alert("La sala está llena");
-        return;
-      }
-      count++;
-      participantCountEl.textContent = count;
-
-      // Actualizar en roomsData también
-      const roomData = roomsData.find(r => r.id === id);
-      if (roomData) roomData.participants = count;
-
-      alert(`Te has unido a la Sala #${id}`);
-
-      // Crear canvas y resultado si no existen
-      const wheelContainer = roomEl.querySelector(".wheel-container");
-      wheelContainer.innerHTML = ""; // Limpiar para reiniciar
-
-      const canvas = document.createElement("canvas");
-      canvas.width = radius * 2 + 40;
-      canvas.height = radius * 2 + 40;
-      canvas.style.margin = "0 auto";
-      canvas.style.display = "block";
-
-      const resultDiv = document.createElement("div");
-      resultDiv.style.textAlign = "center";
-      resultDiv.style.marginTop = "10px";
-      resultDiv.style.fontWeight = "bold";
-      resultDiv.style.fontSize = "1.5rem";
-
-      wheelContainer.appendChild(canvas);
-      wheelContainer.appendChild(resultDiv);
-
-      // Empezar el giro
-      spinWheel(canvas, resultDiv);
-    }
-
-    // Filtrar salas
-    searchInput.addEventListener("input", (e) => {
-      const value = e.target.value.toLowerCase();
-      document.querySelectorAll(".room").forEach(room => {
-        const roomId = room.getAttribute("data-id");
-        room.style.display = roomId.includes(value) ? "block" : "none";
-      });
-    });
-
-    populateRooms();
-  </script>
-</body>
-</html>
+export default App;
