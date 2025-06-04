@@ -1,108 +1,50 @@
 <script>
-  const adminWallet = "0x659a0f0D27378c9f25B97B0fE0F0df6fD1a6D3d4";
-  const roomsContainer = document.getElementById("rooms");
-  const searchInput = document.getElementById("searchInput");
-  const roomsData = [];
-
-  const extraInfoHTML = `
-    <div class="ml-4 text-sm space-y-1 max-w-xs">
-      <p class="font-bold text-green-400">GANA $50 CON $0,50</p>
-      <p>3 ENTRE 200 | ¡Bienvenido! al Sorteo por Participación donde tendrás 3 Oportunidades para ¡GANAR!</p>
-      <p class="font-semibold">>> SERÁN 3 GIROS <<</p>
-      <p>GIRO1️⃣ $10</p>
-      <p>GIRO2️⃣ $10</p>
-      <p>GIRO3️⃣ $50 🏆</p>
-      <p class="font-bold">¡QUE GANE EL MEJOR!</p>
-    </div>
-  `;
-
-  function createRoom(id, participants = 0) {
-    const room = document.createElement("div");
-    room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
-    room.setAttribute("data-id", id);
-    room.setAttribute("data-participants", participants);
-
-    room.innerHTML = `
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="text-lg font-bold flex items-center gap-2">Sala #${id}</h3>
-        ${extraInfoHTML}
-      </div>
-      <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
-      <button onclick="connectWallet(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
-      <iframe
-        id="wheel-${id}"
-        src="https://wheelofnames.com/bh2-bm6"
-        width="400"
-        height="400"
-        style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
-      ></iframe>
-      <button
-        class="mt-4 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded hidden spin-btn"
-        id="spin-btn-${id}"
-        onclick="spinWheel(${id})"
-      >
-        Girar Rueda (Admin)
-      </button>
-    `;
-
-    roomsContainer.appendChild(room);
-    roomsData.push({ id, participants });
-  }
-
-  function populateRooms() {
-    for (let i = 1; i <= 10; i++) {
-      const randomParticipants = Math.floor(Math.random() * 200);
-      createRoom(i, randomParticipants);
-    }
-  }
-
   async function connectWallet(roomId) {
-    if (typeof window.ethereum === 'undefined') {
-      alert('Por favor instala MetaMask.');
+    const selector = document.querySelector(`.number-selector-${roomId}`);
+    const selectedNumber = selector.value;
+
+    if (!selectedNumber) {
+      alert("⚠️ Por favor selecciona un número antes de unirte.");
       return;
     }
 
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const wallet = accounts[0];
-      alert(`Wallet conectada: ${wallet}`);
+    if (typeof window.ethereum !== 'undefined') {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const wallet = accounts[0];
 
-      const roomEl = document.querySelector(`.room[data-id="${roomId}"]`);
-      const countSpan = roomEl.querySelector('.participant-count');
-      let currentCount = parseInt(countSpan.textContent);
-      currentCount++;
-      countSpan.textContent = currentCount;
+        // Valor estimado en BNB para $0.50 (ajustable)
+        const bnbAmount = 0.0022; // Aproximadamente 0.50 USD
+        const hexValue = '0x' + (bnbAmount * 1e18).toString(16);
 
-      // Verificar si llegó a 200
-      if (currentCount >= 200) {
-        if (wallet.toLowerCase() === adminWallet.toLowerCase()) {
-          // Si eres tú, muestra el botón
-          const spinBtn = document.getElementById(`spin-btn-${roomId}`);
-          spinBtn.classList.remove("hidden");
-        } else {
-          // Si NO eres tú, gira automático
-          spinWheel(roomId);
+        const tx = {
+          from: wallet,
+          to: '0x659a0f0D27378c9f25B97B0fE0F0df6fD1a6D3d4',
+          value: hexValue
+        };
+
+        await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [tx]
+        });
+
+        alert(`✅ Te uniste a la Sala #${roomId} con el número ${selectedNumber} 🎉`);
+
+        const roomEl = document.querySelector(`.room[data-id='${roomId}'] .participant-count`);
+        let newCount = parseInt(roomEl.textContent) + 1;
+        roomEl.textContent = newCount;
+
+        if (newCount >= 200) {
+          setTimeout(() => {
+            spinWheel(roomId);
+          }, 2000);
         }
-      }
 
-    } catch (err) {
-      alert("Error al conectar wallet: " + err.message);
+      } catch (error) {
+        alert("❌ Error al procesar la transacción: " + error.message);
+      }
+    } else {
+      alert("⚠️ MetaMask no está disponible. Instálalo para continuar.");
     }
   }
-
-  function spinWheel(roomId) {
-    const iframe = document.getElementById(`wheel-${roomId}`);
-    iframe.contentWindow.postMessage("spin", "*");
-    alert(`🎯 ¡Girando la Rueda en la Sala #${roomId}!`);
-  }
-
-  searchInput?.addEventListener("input", (e) => {
-    const value = e.target.value.toLowerCase();
-    document.querySelectorAll(".room").forEach(room => {
-      const roomId = room.getAttribute("data-id");
-      room.style.display = roomId.includes(value) ? "block" : "none";
-    });
-  });
-
-  populateRooms();
 </script>
