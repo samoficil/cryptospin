@@ -7,8 +7,8 @@
   const extraInfoHTML = `
     <div class="ml-4 text-sm space-y-1 max-w-xs">
       <p class="font-bold text-green-400">GANA $50 CON $0,50</p>
-      <p>3 ENTRE 200 | ¡Bienvenido! al Sorteo por Participacion en donde tendrás 3 Oportunidades para ¡GANAR!</p>
-      <p class="font-semibold">>>SERÁN 3 GIROS<<</p>
+      <p>3 ENTRE 200 | ¡Bienvenido! al Sorteo por Participación donde tendrás 3 Oportunidades para ¡GANAR!</p>
+      <p class="font-semibold">>> SERÁN 3 GIROS <<</p>
       <p>GIRO1️⃣ $10</p>
       <p>GIRO2️⃣ $10</p>
       <p>GIRO3️⃣ $50 🏆</p>
@@ -70,12 +70,10 @@
           roomEl.textContent = newCount;
 
           if (newCount >= 200) {
-            // 🎯 Mostrar botón solo si el wallet es el admin
             if (wallet.toLowerCase() === adminWallet.toLowerCase()) {
               document.getElementById(`spin-btn-${roomId}`).classList.remove("hidden");
             } else {
-              // 🌀 Gira automático si NO es el admin
-              spinWheel(roomId);
+              spinWheel(roomId); // giro automático
             }
           }
         })
@@ -90,7 +88,7 @@
   function spinWheel(roomId) {
     alert(`🌀 ¡GIRANDO LA RUEDA de la Sala #${roomId}!`);
     const iframe = document.getElementById(`wheel-${roomId}`);
-    iframe.contentWindow.postMessage('spin', '*'); // 🔁 Intenta girar automáticamente
+    iframe.contentWindow.postMessage('spin', '*');
   }
 
   searchInput.addEventListener("input", (e) => {
