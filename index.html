@@ -1,93 +1,227 @@
-<!-- Lo importante comienza desde la etiqueta <script> -->
-<script>
-  const roomsContainer = document.getElementById("rooms");
-  const searchInput = document.getElementById("searchInput");
-  const roomsData = [];
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CryptoSpin - Sorteos en Cripto</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-900 text-white">
+  <header class="p-4 bg-gray-800 text-center text-2xl font-bold">CryptoSpin</header>
 
-  const extraInfoHTML = `
-    <div class="ml-4 text-sm space-y-1 max-w-xs">
-      <p class="font-bold text-green-400">GANA $50 CON $0,50</p>
-      <p>3 ENTRE 200 | ¡Bienvenido! al Sorteo por Participacion en donde tendrás 3 Oportunidades para ¡GANAR!</p>
-      <p class="font-semibold">>>SERÁN 3 GIROS<<</p>
-      <p>GIRO1️⃣ $10</p>
-      <p>GIRO2️⃣ $10</p>
-      <p>GIRO3️⃣ $50 🏆</p>
-      <p class="font-bold">¡QUE GANE EL MEJOR!</p>
+  <main class="p-6">
+    <!-- Rueda afuera girando lento -->
+    <div class="flex justify-center mb-8">
+      <canvas id="outerWheel" width="400" height="400" style="border-radius: 12px; border: 2px solid #4ade80;"></canvas>
     </div>
-  `;
 
-  function createRoom(id, participants = 0) {
-    const room = document.createElement("div");
-    room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
-    room.setAttribute("data-id", id);
-    room.setAttribute("data-participants", participants);
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">Bienvenido a CryptoSpin</h2>
+      <p>Participa en salas de sorteo automáticas y gana premios en criptomonedas.</p>
+    </section>
 
-    room.innerHTML = `
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="text-lg font-bold flex items-center gap-2">Sala #${id}</h3>
-        ${extraInfoHTML}
+    <div class="mb-6">
+      <input type="text" id="searchInput" placeholder="Buscar sala por número..." class="w-full p-2 rounded text-black" />
+    </div>
+
+    <section id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></section>
+  </main>
+
+  <footer class="p-4 bg-gray-800 text-center">&copy; 2025 CryptoSpin. Todos los derechos reservados.</footer>
+
+  <script>
+    const roomsContainer = document.getElementById("rooms");
+    const searchInput = document.getElementById("searchInput");
+    const roomsData = [];
+
+    const extraInfoHTML = `
+      <div class="ml-4 text-sm space-y-1 max-w-xs">
+        <p class="font-bold text-green-400">GANA $50 CON $0,50</p>
+        <p>3 ENTRE 200 | ¡Bienvenido! al Sorteo por Participación en donde tendrás 3 Oportunidades para ¡GANAR!</p>
+        <p class="font-semibold">>>SERÁN 3 GIROS<<</p>
+        <p>GIRO1️⃣ $10</p>
+        <p>GIRO2️⃣ $10</p>
+        <p>GIRO3️⃣ $50 🏆</p>
+        <p class="font-bold">¡QUE GANE EL MEJOR!</p>
       </div>
-      <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
-      <button onclick="connectWallet(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
-      <iframe
-        id="wheel-${id}"
-        src="https://wheelofnames.com/bh2-bm6"
-        width="400"
-        height="400"
-        style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"
-      ></iframe>
     `;
 
-    roomsContainer.appendChild(room);
-    roomsData.push({ id, participants });
-  }
+    function createRoom(id, participants = 0) {
+      const canvasId = `wheelCanvas${id}`;
+      const spinButtonId = `spinButton${id}`;
+      const room = document.createElement("div");
+      room.className = "bg-gray-700 rounded-xl p-4 shadow-xl room";
+      room.setAttribute("data-id", id);
+      room.setAttribute("data-participants", participants);
 
-  function populateRooms() {
-    for (let i = 1; i <= 10; i++) {
-      const randomParticipants = (i === 1) ? 41 : Math.floor(Math.random() * 200);
-      if (randomParticipants < 200) {
-        createRoom(i, randomParticipants);
+      room.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-lg font-bold flex items-center gap-2">Sala #${id}</h3>
+          ${extraInfoHTML}
+        </div>
+        <p>Participantes: <span class="participant-count">${participants}</span> / 200</p>
+        <button onclick="connectWallet(${id})" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full">Unirse por $0.50</button>
+        <canvas id="${canvasId}" width="400" height="400" style="margin-top:20px; border-radius: 12px; border: 2px solid #4ade80;"></canvas>
+        <button id="${spinButtonId}" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full">Girar</button>
+      `;
+
+      roomsContainer.appendChild(room);
+      drawWheel(canvasId);
+      document.getElementById(spinButtonId).onclick = () => spinWheel(canvasId);
+      roomsData.push({ id, participants });
+    }
+
+    function drawWheel(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext("2d");
+      const numSegments = 200;
+      const colors = ["#F87171", "#60A5FA", "#FACC15", "#34D399"];
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = 180;
+      const angle = (2 * Math.PI) / numSegments;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < numSegments; i++) {
+        const start = i * angle;
+        const end = start + angle;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, start, end);
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.fill();
+        ctx.strokeStyle = "#222";
+        ctx.stroke();
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(start + angle / 2);
+        ctx.fillStyle = "white";
+        ctx.font = "10px sans-serif";
+        ctx.fillText(i + 1, radius - 30, 5);
+        ctx.restore();
+      }
+
+      // Flecha
+      ctx.beginPath();
+      ctx.moveTo(centerX - 10, 10);
+      ctx.lineTo(centerX + 10, 10);
+      ctx.lineTo(centerX, 30);
+      ctx.closePath();
+      ctx.fillStyle = "white";
+      ctx.fill();
+    }
+
+    function spinWheel(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext("2d");
+      const spins = 10 + Math.random() * 10;
+      let rotation = 0;
+      let speed = 0.3;
+      const friction = 0.98;
+
+      function animate() {
+        ctx.save();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(rotation);
+        ctx.translate(-canvas.width / 2, -canvas.height / 2);
+        drawWheel(canvasId);
+        ctx.restore();
+        rotation += speed;
+        speed *= friction;
+        if (speed > 0.002) requestAnimationFrame(animate);
+      }
+      animate();
+    }
+
+    function connectWallet(roomId) {
+      const roomEl = document.querySelector(`.room[data-id='${roomId}'] .participant-count`);
+      let newCount = parseInt(roomEl.textContent) + 1;
+      if (newCount <= 200) {
+        roomEl.textContent = newCount;
+        if (newCount === 200) {
+          const spinBtn = document.getElementById(`spinButton${roomId}`);
+          spinBtn.click();
+        }
+        alert(`¡Te has unido a la Sala #${roomId}! Participantes: ${newCount}/200`);
+      } else {
+        alert("Sala llena.");
       }
     }
-  }
 
-  function connectWallet(roomId) {
-    if (typeof window.ethereum !== 'undefined') {
-      window.ethereum.request({ method: 'eth_requestAccounts' })
-        .then(accounts => {
-          const wallet = accounts[0];
-          alert(`Wallet conectada: ${wallet}\n¡Te has unido a la Sala #${roomId}!`);
-
-          // Incrementar participantes
-          const roomEl = document.querySelector(`.room[data-id='${roomId}']`);
-          const participantEl = roomEl.querySelector(".participant-count");
-          let newCount = parseInt(participantEl.textContent) + 1;
-          participantEl.textContent = newCount;
-
-          // Si llegó a 200, activar la rueda
-          if (newCount >= 200) {
-            const iframe = roomEl.querySelector("iframe");
-            if (iframe && iframe.contentWindow) {
-              iframe.contentWindow.postMessage({ spin: true }, "*");
-              alert("🎉 ¡La sala está llena! La rueda está girando automáticamente.");
-            }
-          }
-        })
-        .catch(err => {
-          alert('Error al conectar wallet: ' + err.message);
-        });
-    } else {
-      alert('Por favor instala MetaMask para unirte.');
+    function populateRooms() {
+      for (let i = 1; i <= 10; i++) {
+        const randomParticipants = i === 1 ? 41 : Math.floor(Math.random() * 200);
+        if (randomParticipants < 200) {
+          createRoom(i, randomParticipants);
+        }
+      }
     }
-  }
 
-  searchInput.addEventListener("input", (e) => {
-    const value = e.target.value.toLowerCase();
-    document.querySelectorAll(".room").forEach(room => {
-      const roomId = room.getAttribute("data-id");
-      room.style.display = roomId.includes(value) ? "block" : "none";
+    // Animación lenta rueda afuera
+    const outerCanvas = document.getElementById("outerWheel");
+    const outerCtx = outerCanvas.getContext("2d");
+    let outerRotation = 0;
+    const numSegments = 200;
+    const colors = ["#F87171", "#60A5FA", "#FACC15", "#34D399"];
+    const centerX = outerCanvas.width / 2;
+    const centerY = outerCanvas.height / 2;
+    const radius = 180;
+    const angle = (2 * Math.PI) / numSegments;
+
+    function drawOuterWheel() {
+      outerCtx.clearRect(0, 0, outerCanvas.width, outerCanvas.height);
+      for (let i = 0; i < numSegments; i++) {
+        const start = i * angle;
+        const end = start + angle;
+        outerCtx.beginPath();
+        outerCtx.moveTo(centerX, centerY);
+        outerCtx.arc(centerX, centerY, radius, start, end);
+        outerCtx.fillStyle = colors[i % colors.length];
+        outerCtx.fill();
+        outerCtx.strokeStyle = "#222";
+        outerCtx.stroke();
+        outerCtx.save();
+        outerCtx.translate(centerX, centerY);
+        outerCtx.rotate(start + angle / 2);
+        outerCtx.fillStyle = "white";
+        outerCtx.font = "10px sans-serif";
+        outerCtx.fillText(i + 1, radius - 30, 5);
+        outerCtx.restore();
+      }
+
+      // Flecha
+      outerCtx.beginPath();
+      outerCtx.moveTo(centerX - 10, 10);
+      outerCtx.lineTo(centerX + 10, 10);
+      outerCtx.lineTo(centerX, 30);
+      outerCtx.closePath();
+      outerCtx.fillStyle = "white";
+      outerCtx.fill();
+    }
+
+    function animateOuterWheel() {
+      outerCtx.save();
+      outerCtx.clearRect(0, 0, outerCanvas.width, outerCanvas.height);
+      outerCtx.translate(centerX, centerY);
+      outerCtx.rotate(outerRotation);
+      outerCtx.translate(-centerX, -centerY);
+      drawOuterWheel();
+      outerCtx.restore();
+      outerRotation += 0.005; // gira lento
+      requestAnimationFrame(animateOuterWheel);
+    }
+
+    populateRooms();
+    animateOuterWheel();
+
+    searchInput.addEventListener("input", (e) => {
+      const value = e.target.value.toLowerCase();
+      document.querySelectorAll(".room").forEach(room => {
+        const roomId = room.getAttribute("data-id");
+        room.style.display = roomId.includes(value) ? "block" : "none";
+      });
     });
-  });
-
-  populateRooms();
-</script>
+  </script>
+</body>
+</html>
