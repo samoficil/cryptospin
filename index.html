@@ -1,223 +1,108 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GLOBAL CASH TIME | Pro</title>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <style>
-        :root { --primary: #ffea00; --primary-dark: #ccac00; --bg: #050505; --card: #121212; --text: #ffffff; --green: #00ff66; --red: #ff3333; --link: #88ccff; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; position: relative; min-height: 100vh; }
-        body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 50%, #1a1500 0%, #050505 100%); z-index: -2; }
-        
-        .bg-glow { position: fixed; width: 100vw; height: 100vh; z-index: -1; overflow: hidden; top: 0; }
-        .particle { position: absolute; width: 4px; height: 4px; background: var(--primary); border-radius: 50%; opacity: 0; animation: particleRain 4s infinite linear; filter: blur(1px) drop-shadow(0 0 5px var(--primary)); }
-        
-        @keyframes particleRain {
-            0% { transform: translateY(-10vh); opacity: 0; }
-            20% { opacity: 0.8; }
-            80% { opacity: 0.8; }
-            100% { transform: translateY(110vh); opacity: 0; }
-        }
-
-        header { width: 100%; padding: 20px 0; background: rgba(18, 18, 18, 0.9); border-bottom: 2px solid var(--primary); text-align: center; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
-        .main-container { width: 95%; max-width: 1200px; padding: 10px; box-sizing: border-box; flex-grow: 1; }
-        
-        button { background: linear-gradient(145deg, #fff200, #b8860b); color: #000; border: 1px solid #fff; padding: 12px; font-weight: 900; cursor: pointer; border-radius: 8px; font-size: 12px; text-transform: uppercase; transition: 0.3s; box-shadow: 0 0 10px rgba(255, 234, 0, 0.2); }
-        .profile-card { display: none; background: linear-gradient(145deg, #1a1a1a, #0a0800); border: 2px solid var(--primary); padding: 15px; border-radius: 15px; margin: 0 auto 20px; width: 100%; max-width: 480px; box-sizing: border-box; }
-        .label-gold { color: var(--primary); font-size: 10px; font-weight: bold; text-transform: uppercase; }
-        .section-box { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 20px; text-align: center; border: 1px solid #222; }
-        .salas-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 20px; }
-        .sala-card { background: #0a0a0a; border: 1px solid #333; border-radius: 12px; padding: 8px; text-align: center; cursor: pointer; transition: 0.3s; }
-        .sala-card.active { border-color: var(--primary); background: #2a2200; box-shadow: 0 0 15px rgba(255, 234, 0, 0.4); }
-
-        .game-layout { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: flex-start; }
-        .left-col { width: 320px; flex-shrink: 0; }
-        .right-col { flex: 1; min-width: 300px; }
-
-        #canvas-container { position: relative; margin: 0 auto; width: 300px; height: 300px; }
-        #pointer { position: absolute; right: -5px; top: 50%; transform: translateY(-50%); width: 30px; height: 20px; background: #fff; clip-path: polygon(100% 0%, 0% 50%, 100% 100%); z-index: 10; }
-        canvas { width: 300px !important; height: 300px !important; border-radius: 50%; border: 4px solid #222; }
-        
-        .numbers-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; background: #000; padding: 10px; border-radius: 8px; max-height: 400px; overflow-y: auto; }
-        .num-btn { padding: 8px 0; font-size: 10px; border: 1px solid #333; background: #111; color: #fff; cursor: pointer; border-radius: 4px; }
-        .num-btn.selected { background: var(--green); color: #000; font-weight: bold; }
-        .num-btn.taken { background: var(--red) !important; color: #fff !important; cursor: not-allowed; pointer-events: none; }
-        
-        .btn-rand { background: #222; color: #fff; border: 1px solid #444; padding: 8px; font-size: 10px; flex: 1; text-transform: none; }
-        .btn-rand b { color: var(--primary); display: block; font-size: 11px; }
-
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; justify-content:center; align-items:center; }
-        input { width: 90%; padding: 14px; margin: 10px 0; background: #000; color: #fff; border: 1px solid #444; border-radius: 8px; text-align: center; }
-        .password-wrapper { position: relative; width: 90%; margin: 0 auto; }
-        .eye-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #aaa; }
-        .auth-links { margin-top: 15px; font-size: 12px; color: var(--link); cursor: pointer; text-decoration: underline; }
-
-        .wallet-box { background: #111; border: 1px dashed var(--primary); padding: 10px; border-radius: 8px; font-size: 11px; word-break: break-all; margin: 10px 0; cursor: pointer; }
-        .upload-box { border: 2px dashed #444; padding: 10px; margin: 10px 0; border-radius: 8px; cursor: pointer; background: #0a0a0a; font-size: 11px; }
-        #preview-img { width: 100%; max-height: 100px; object-fit: contain; margin-top: 10px; display: none; }
-
-        footer { width: 100%; padding: 30px 0; background: #0a0a0a; border-top: 1px solid #222; text-align: center; color: #555; font-size: 12px; }
-        @media (max-width: 768px) { .salas-grid { grid-template-columns: repeat(2, 1fr); } .left-col, .right-col { width: 100%; } }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🔱GLOBAL CASH TIME🔱</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    iframe { pointer-events: none; border-radius: 12px; border: 2px solid #4ade80; margin-top: 20px; }
+    .hidden-section { display: none; }
+  </style>
 </head>
-<body>
-
-<div class="bg-glow">
-    <div class="particle" style="left:5%"></div><div class="particle" style="left:50%"></div><div class="particle" style="left:90%"></div>
-</div>
-
-<header>
-    <div style="font-weight: 900; font-size: 26px; color: var(--primary);">GLOBAL CASH TIME</div>
-    <div id="guest-btn" style="margin-top:10px;"><button onclick="openM('auth')" style="width:auto; padding:8px 30px;">LOGIN / REGISTRO</button></div>
-</header>
-
-<div class="main-container">
-    <div id="user-profile" class="profile-card">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div><span class="label-gold">CUENTA</span><div id="prof-name" style="font-weight:900;">---</div></div>
-            <div style="text-align:right;"><span class="label-gold">SALDO</span><div id="prof-balance" style="color:var(--green); font-weight:900; font-size:24px;">$0.00</div></div>
-        </div>
-        <div style="display:flex; gap:5px; margin-top:15px;">
-            <button onclick="openM('dep')" style="flex:1;">DEPOSITAR</button>
-            <button onclick="openM('with')" style="flex:1; background:var(--red); color:#fff;">RETIRAR</button>
-            <button onclick="openM('hist')" style="flex:1; background:#444; color:#fff;">HISTORIAL</button>
-            <button onclick="logout()" style="flex:1; background:#333; color:#fff;">SALIR</button>
-        </div>
-        <div id="admin-panel" style="display:none; margin-top:15px; border-top:1px solid #444; padding-top:10px;">
-            <span class="label-gold">PAGOS PENDIENTES (ADMIN)</span>
-            <div id="pending-deps"></div>
-        </div>
+<body class="bg-gray-900 text-white">
+  <header class="p-4 bg-gray-800 flex justify-between items-center border-b border-green-500 sticky top-0 z-50">
+    <div class="w-1/4"></div>
+    <div class="w-1/2 text-center text-2xl font-bold uppercase">🔱GLOBAL CASH TIME🔱</div>
+    <div class="w-1/4 flex justify-end gap-2">
+      <button id="btnDashboard" onclick="toggleProfile()" class="hidden text-[10px] font-bold uppercase border border-white px-2 py-1 rounded">Perfil</button>
+      <button id="connectBtn" onclick="connectWallet()" class="bg-blue-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Conectar Wallet</button>
     </div>
+  </header>
 
-    <div class="salas-grid" id="grid-salas"></div>
+  <main class="p-6">
+    <section id="main-content">
+      <section class="mb-6">
+        <h2 class="text-xl font-semibold mb-2">Participa con USDT y gana.</h2>
+        <p>Selecciona una sala, escoge un numero o escoge varios números en la misma sala y participa.</p>
+      </section>
+      <div id="rooms" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
 
-    <div class="section-box game-layout">
-        <div class="left-col">
-            <h3 id="sala-txt" style="color:var(--primary); margin:0;">SALA #1</h3>
-            <div id="canvas-container"><div id="pointer"></div><canvas id="wheel" width="600" height="600"></canvas></div>
-            <p id="prog-txt" style="font-weight:bold; margin:10px 0 5px;">0 / 200 Vendidos</p>
-            <div id="live-counter" style="color:var(--green); font-size: 18px; font-weight: 900; height: 25px;"></div>
-            <p id="status-txt" style="color:var(--primary); font-weight:bold; min-height:1.2em; margin-top: 5px;"></p>
-            
-            <table style="width:100%; background:#000; border:1px solid var(--primary-dark); font-size:11px; margin-top:10px;">
-                <tr><th style="background:var(--primary); color:#000;">GIRO</th><th style="background:var(--primary); color:#000;">PREMIO</th></tr>
-                <tr><td>1er Giro (60s)</td><td>$5.00 USD</td></tr>
-                <tr><td>2do Giro (60s)</td><td>$15.00 USD</td></tr>
-                <tr><td>3er Giro (60s)</td><td>$50.00 USD</td></tr>
-            </table>
+    <section id="userProfile" class="mt-8 p-4 bg-gray-800 rounded-lg max-w-md mx-auto hidden border border-green-500 text-center">
+      <h3 class="text-lg font-bold mb-2">Perfil de Usuario</h3>
+      <p class="text-xs"><strong>Wallet:</strong> <span id="userWallet" class="break-all font-mono"></span></p>
+      <p class="text-xs"><strong>Ganancias USDT:</strong> <span id="userEarnings" class="text-green-400 font-bold">0.00</span></p>
+      <button onclick="toggleProfile()" class="mt-4 bg-green-600 py-2 rounded w-full uppercase text-xs font-bold">Volver</button>
+    </section>
+  </main>
 
-            <button id="buy-btn" onclick="comprarSeleccion()" style="width:100%; height:50px; margin:10px 0; font-size:14px;">COMPRAR SELECCIONADOS</button>
-            <div style="display:flex; gap:5px;">
-                <button class="btn-rand" onclick="rand(5)"><b>5 Aleatorios</b>$2.50</button>
-                <button class="btn-rand" onclick="rand(15)"><b>15 Aleatorios</b>$7.50</button>
-                <button class="btn-rand" onclick="rand(25)"><b>25 Aleatorios</b>$12.50</button>
-            </div>
-        </div>
-        <div class="right-col">
-            <h4 style="margin:0 0 10px 0; color:var(--primary);">SELECCIÓN MANUAL ($0.50)</h4>
-            <div class="numbers-grid" id="num-selector"></div>
-        </div>
-    </div>
-</div>
+  <script>
+    // PEGA TUS CREDENCIALES DE FIREBASE AQUÍ
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_PROYECTO.firebaseapp.com",
+      databaseURL: "https://TU_PROYECTO.firebaseio.com",
+      projectId: "TU_PROYECTO",
+      storageBucket: "TU_PROYECTO.appspot.com",
+      messagingSenderId: "ID",
+      appId: "APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-<footer>
-    <div style="color:var(--primary); font-weight: 900; margin-bottom: 5px;">GLOBAL CASH TIME © 2026</div>
-    <div>Todos los derechos reservados.</div>
-</footer>
+    const YOUR_WALLET = "TFtX2tLdjqTnTdVAUfQ8YNACv6QUAK9LAy";
+    const USDT_AMOUNT = 0.50; 
+    let currentUserWallet = null;
 
-<div id="modal" class="modal"><div id="modal-content" class="section-box" style="width:90%; max-width:350px;"></div></div>
+    const extraInfoHTML = `<div class="ml-4 text-sm space-y-1 max-w-xs"><p class="font-bold text-green-400">GANA $50 CON $0,50</p><p>3 ENTRE 200 | ¡Bienvenido! al Sorteo por Participacion en donde tendrás 3 Oportunidades para ¡GANAR!</p><p class="font-semibold">>>SERÁN 3 GIROS<<</p><p>GIRO1️⃣ $5</p><p>GIRO2️⃣ $10</p><p>GIRO3️⃣ $50 🏆</p><p class="font-bold">¡QUE GANE EL MEJOR!</p></div>`;
 
-<script>
-let users = JSON.parse(localStorage.getItem('GCT_MASTER_DB')) || [];
-let currentU = null, ang = 0, sSel = parseInt(localStorage.getItem('GCT_S_SEL')) || 0, mySelection = [], tempImg = "";
-let pendingDeps = JSON.parse(localStorage.getItem('GCT_PENDING')) || [];
-let historial = JSON.parse(localStorage.getItem('GCT_HIST')) || [];
-let salas = JSON.parse(localStorage.getItem('GCT_SALAS_20')) || Array.from({length: 20}, (_, i) => ({ 
-    id: i+1, count: 0, sold: [], isSpinning: false, isWaiting: false, currentGiro: 0, endTime: 0, lastWinner: null 
-}));
+    async function connectWallet() {
+      if (window.tronWeb) { currentUserWallet = window.tronWeb.defaultAddress.base58; }
+      else if (window.ethereum) { const accs = await window.ethereum.request({ method: "eth_requestAccounts" }); currentUserWallet = accs[0]; }
+      else { return alert("Usa una Wallet"); }
 
-const wheelNumbers = Array.from({length: 200}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+      document.getElementById("userWallet").textContent = currentUserWallet;
+      document.getElementById("connectBtn").textContent = "CONECTADO";
+      document.getElementById("btnDashboard").classList.remove("hidden");
 
-window.onload = () => {
-    const saved = localStorage.getItem('GCT_SESSION');
-    if(saved) {
-        if(saved === "ADMIN_GLOBAL") { currentU = {u:"ADMIN_GLOBAL", b:0}; document.getElementById('admin-panel').style.display='block'; renderAdmin(); }
-        else { currentU = users.find(x => x.u === saved); }
-        if(currentU) showProfile();
+      db.ref('users/' + currentUserWallet).on('value', (snap) => {
+        const val = snap.val();
+        document.getElementById("userEarnings").textContent = val ? val.balance.toFixed(2) : "0.00";
+      });
     }
-    setSala(sSel); renderGrid(); renderNumbers(); draw(); setInterval(logic, 30);
-};
 
-function logic() {
-    const now = Date.now();
-    let change = false;
-    salas.forEach((s, i) => {
-        if(s.isSpinning) {
-            let timeLeft = s.endTime - now;
-            if(timeLeft <= 0) {
-                s.isSpinning = false; s.isWaiting = true; s.endTime = now + 5000;
-                s.lastWinner = getWinningNumber();
-                historial.push({ sala: s.id, ganador: s.lastWinner, fecha: new Date().toLocaleString() });
-                if(i === sSel) {
-                    confetti({particleCount: 200, spread: 100, origin: {y: 0.6}, shapes: ['square']});
-                    document.getElementById('live-counter').innerText = "";
-                }
-                change = true;
-            } else if(i === sSel) {
-                let progress = timeLeft / 60000;
-                ang += Math.max(0.001, Math.pow(progress, 3) * 0.4); 
-                draw();
-                document.getElementById('live-counter').innerText = `SORTEANDO: ${getWinningNumber()}`;
-            }
-        } else if(s.isWaiting) {
-            if(now >= s.endTime) {
-                s.isWaiting = false;
-                if(s.currentGiro < 3) { s.currentGiro++; s.isSpinning = true; s.endTime = now + 60000; } 
-                else { s.currentGiro = 0; s.count = 0; s.sold = []; }
-                change = true;
-            }
-        }
-    });
-    if(change) save();
-    updateStatus();
-}
+    async function joinRoom(roomId) {
+      const sel = document.getElementById(`select-${roomId}`).value;
+      if (!sel) return alert("Selecciona un número.");
+      if (!currentUserWallet) await connectWallet();
 
-function getWinningNumber() {
-    const normalizedAng = (ang % (Math.PI * 2) + (Math.PI * 2)) % (Math.PI * 2);
-    const index = Math.floor(((Math.PI * 2 - normalizedAng) / (Math.PI * 2)) * 200) % 200;
-    return wheelNumbers[index];
-}
-
-function draw() {
-    const canvas = document.getElementById('wheel'), ctx = canvas.getContext('2d'), colors = ['#3366FF', '#FF3333', '#FFCC00', '#009933'];
-    const arc = (Math.PI*2)/200; ctx.clearRect(0,0,600,600);
-    for(let i=0; i<200; i++) {
-        const a = ang + i*arc; ctx.beginPath(); ctx.fillStyle = colors[i%4]; ctx.moveTo(300,300); ctx.arc(300,300,300, a, a+arc); ctx.fill();
-        ctx.save(); ctx.translate(300,300); ctx.rotate(a+arc/2); ctx.fillStyle="#fff"; ctx.font="bold 8px Arial"; ctx.fillText(wheelNumbers[i], 265, 0); ctx.restore();
+      try {
+        if (window.tronWeb) { await window.tronWeb.trx.sendTransaction(YOUR_WALLET, 500000); }
+        else { await window.ethereum.request({ method: "eth_sendTransaction", params: [{ from: currentUserWallet, to: YOUR_WALLET, value: "0x" + (USDT_AMOUNT * 1e18).toString(16) }] }); }
+        
+        db.ref('users/' + currentUserWallet).transaction((cur) => {
+          return { balance: (cur ? cur.balance : 0) + USDT_AMOUNT };
+        });
+        alert("¡Pago exitoso!");
+      } catch (e) { alert("Error"); }
     }
-}
 
-function setSala(i) { sSel = i; localStorage.setItem('GCT_S_SEL', i); mySelection = []; document.getElementById('sala-txt').innerText = `SALA #${salas[i].id}`; renderGrid(); renderNumbers(); }
-function comprarSeleccion() { if(!currentU) return openM('auth'); let s = salas[sSel], cost = mySelection.length * 0.5; if(cost > 0 && currentU.b >= cost) { currentU.b -= cost; s.sold.push(...mySelection); s.count = s.sold.length; mySelection = []; if(s.count >= 200) { s.currentGiro = 1; s.isSpinning = true; s.endTime = Date.now() + 60000; } save(); renderGrid(); renderNumbers(); updateUI(); } }
-function rand(n) { let s = salas[sSel]; mySelection = []; let avail = []; for(let i=1; i<=200; i++) if(!s.sold.includes(i)) avail.push(i); for(let i=0; i<n && avail.length>0; i++) mySelection.push(avail.splice(Math.floor(Math.random()*avail.length),1)[0]); renderNumbers(); }
-function openM(t) { const c = document.getElementById('modal-content'); document.getElementById('modal').style.display='flex'; if(t==='auth') { c.innerHTML = `<h3>LOGIN</h3><input id="li-u" placeholder="Correo"><div class="password-wrapper"><input id="li-p" type="password" placeholder="Clave"><span class="eye-icon" onclick="togglePass('li-p')">👁️</span></div><button onclick="login()" style="width:100%; margin-top:10px;">ENTRAR</button><div class="auth-links"><span onclick="openM('reg')">Registrarse</span> | <span onclick="alert('Contacte a soporte')">Olvidé mi clave</span></div>`; } else if(t==='reg') { c.innerHTML = `<h3>REGISTRO</h3><input id="re-u" placeholder="Correo electrónico"><div class="password-wrapper"><input id="re-p" type="password" placeholder="Crear Clave"><span class="eye-icon" onclick="togglePass('re-p')">👁️</span></div><button onclick="register()" style="width:100%; margin-top:10px;">CREAR CUENTA</button><div class="auth-links"><span onclick="openM('auth')">Ya tengo cuenta</span></div>`; } else if(t==='dep') { c.innerHTML = `<h3>RECARGAR</h3><div class="wallet-box">Wallet TRC20:<br><b>TFtX2tLdjqTnTdVAUfQ8YNACv6QUAK9LAy</b></div><input id="dep-amt" type="number" placeholder="Monto $"><div class="upload-box" onclick="document.getElementById('f-in').click()">+ SUBIR COMPROBANTE<input type="file" id="f-in" hidden onchange="previewFile()"><img id="preview-img"></div><button onclick="notificarPago()" style="width:100%">ENVIAR</button>`; } else if(t==='with') { c.innerHTML = `<h3>RETIRAR</h3><input id="wi-amt" type="number" placeholder="Monto $"><input placeholder="Tu Billetera TRC20"><button onclick="alert('Solicitado')" style="width:100%; background:var(--red); color:#fff;">RETIRAR</button>`; } else if(t==='hist') { c.innerHTML = `<h3>HISTORIAL</h3><div style="max-height:200px; overflow-y:auto; font-size:11px;">` + historial.map(h => `<div style="border-bottom:1px solid #333; padding:5px;">SALA ${h.sala} - #${h.ganador} (${h.fecha})</div>`).join('') + `</div>`; } c.innerHTML += `<button onclick="closeM()" style="background:#444; margin-top:10px; width:100%;">CERRAR</button>`; }
-function togglePass(id) { const el = document.getElementById(id); el.type = el.type === 'password' ? 'text' : 'password'; }
-function renderGrid() { const grid = document.getElementById('grid-salas'); grid.innerHTML = ""; salas.forEach((s, i) => { grid.innerHTML += `<div class="sala-card ${sSel===i?'active':''}" onclick="setSala(${i})"><b>SALA ${s.id}</b><div>${s.count}/200</div></div>`; }); }
-function renderNumbers() { const cont = document.getElementById('num-selector'); cont.innerHTML = ""; const s = salas[sSel]; for(let n=1; n<=200; n++) { const isSold = s.sold.includes(n), isSel = mySelection.includes(n); cont.innerHTML += `<button class="num-btn ${isSold?'taken':''} ${isSel?'selected':''}" onclick="${!isSold ? `toggleNum(${n})` : ''}">${n}</button>`; } document.getElementById('prog-txt').innerText = `${s.count} / 200 Vendidos`; }
-function toggleNum(n) { if(mySelection.includes(n)) mySelection = mySelection.filter(x => x !== n); else mySelection.push(n); renderNumbers(); }
-function updateStatus() { let s = salas[sSel], st = document.getElementById('status-txt'); if(s.isSpinning) st.innerText = `GIRO ${s.currentGiro}...`; else if(s.isWaiting) st.innerText = `¡GANADOR: #${s.lastWinner}!`; else st.innerText = ""; }
-function save() { localStorage.setItem('GCT_SALAS_20', JSON.stringify(salas)); localStorage.setItem('GCT_MASTER_DB', JSON.stringify(users)); localStorage.setItem('GCT_HIST', JSON.stringify(historial)); localStorage.setItem('GCT_PENDING', JSON.stringify(pendingDeps)); }
-function showProfile() { document.getElementById('guest-btn').style.display='none'; document.getElementById('user-profile').style.display='block'; document.getElementById('prof-name').innerText = currentU.u; updateUI(); }
-function updateUI() { if(currentU && currentU.u !== "ADMIN_GLOBAL") document.getElementById('prof-balance').innerText = `$${currentU.b.toFixed(2)}`; }
-function logout() { localStorage.removeItem('GCT_SESSION'); location.reload(); }
-function closeM() { document.getElementById('modal').style.display='none'; tempImg=""; }
-function register() { let u = document.getElementById('re-u').value, p = document.getElementById('re-p').value; users.push({u, p, b: 0}); save(); alert("Registrado"); openM('auth'); }
-function login() { let u = document.getElementById('li-u').value, p = document.getElementById('li-p').value; if(u==="ADMIN_GLOBAL" && p==="CASH_TIME_2026") { localStorage.setItem('GCT_SESSION', u); location.reload(); return; } let user = users.find(x=>x.u===u && x.p===p); if(user) { localStorage.setItem('GCT_SESSION', u); location.reload(); } else alert("Error"); }
-function previewFile() { const f = document.getElementById('f-in').files[0]; const r = new FileReader(); r.onloadend = () => { tempImg = r.result; let p = document.getElementById('preview-img'); p.src=tempImg; p.style.display='block'; }; if(f) r.readAsDataURL(f); }
-function notificarPago() { let a = parseFloat(document.getElementById('dep-amt').value); if(a > 0) { pendingDeps.push({ u: currentU.u, a: a }); save(); alert("Enviado."); closeM(); } }
-function renderAdmin() { const div = document.getElementById('pending-deps'); div.innerHTML = pendingDeps.length === 0 ? "Vacío" : ""; pendingDeps.forEach((p, idx) => { div.innerHTML += `<div class="admin-notif"><span>${p.u}: $${p.a}</span><button style="background:var(--green); border:none; padding:5px;" onclick="aprobar(${idx})">OK</button></div>`; }); }
-function aprobar(idx) { let u = users.find(x => x.u === pendingDeps[idx].u); if(u) u.b += pendingDeps[idx].a; pendingDeps.splice(idx, 1); save(); renderAdmin(); updateUI(); }
-</script>
+    function toggleProfile() {
+      document.getElementById("userProfile").classList.toggle("hidden");
+      document.getElementById("main-content").classList.toggle("hidden");
+    }
+
+    function createRoom(id) {
+      const room = document.createElement("div");
+      room.className = "bg-gray-700 rounded-xl p-4 room";
+      room.innerHTML = `<div class="flex justify-between mb-2"><h3>Sala #${id}</h3>${extraInfoHTML}</div><select id="select-${id}" class="w-full p-2 text-black rounded mb-2"><option value="" disabled selected>Selecciona número</option>${Array.from({length:200},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join("")}</select><button onclick="joinRoom(${id})" class="bg-green-600 py-2 rounded-full w-full font-bold uppercase text-xs">Unirse por $0.50</button><iframe src="https://wheelofnames.com/bh2-bm6" width="100%" height="400"></iframe>`;
+      document.getElementById("rooms").appendChild(room);
+    }
+
+    window.onload = () => { for (let i = 1; i <= 10; i++) createRoom(i); };
+  </script>
 </body>
 </html>
